@@ -60,7 +60,7 @@ class Discrimninator(nn.Module):
             use_bias=False, spectral_normalization=sn
         )
 
-        init_weight()
+        init_weight(self)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
