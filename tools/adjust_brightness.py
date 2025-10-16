@@ -10,6 +10,7 @@ import torch
 # I/O helpers (RGB tensors)
 #############################
 
+
 def read_img(path: str, device: torch.device) -> torch.Tensor:
     """Read image with OpenCV, convert BGR->RGB, return float32 tensor (C,H,W) on device in range [0,255]."""
     img_bgr = cv2.imread(path, cv2.IMREAD_COLOR)
@@ -30,6 +31,7 @@ def tensor_to_uint8_hwc(img: torch.Tensor) -> np.ndarray:
 #############################
 # Brightness utilities
 #############################
+
 
 def calculate_average_brightness(img_rgb: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute average brightness and per-channel means for an RGB tensor (C,H,W) in [0,255].
@@ -72,7 +74,8 @@ def adjust_brightness_from_src_to_dst(
     if verbose:
         print(f"Average brightness of source:  {brightness_src.item():.4f}")
         print(f"Average brightness of target:  {brightness_dst.item():.4f}")
-        print(f"Brightness ratio (src/dst):    {(brightness_src/brightness_dst).item():.6f}")
+        print(
+            f"Brightness ratio (src/dst):    {(brightness_src/brightness_dst).item():.6f}")
 
     if mode == "luma":
         ratio = (brightness_src / (brightness_dst + 1e-12)).to(device)
@@ -104,13 +107,15 @@ def adjust_brightness_from_src_to_dst(
         def fit(img: np.ndarray) -> np.ndarray:
             return cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
 
-        vis = np.concatenate([fit(dst_np), fit(src_np), fit(adj_np)], axis=1)  # RGB strip
+        vis = np.concatenate(
+            [fit(dst_np), fit(src_np), fit(adj_np)], axis=1)  # RGB strip
 
         if save_path is not None:
             # OpenCV expects BGR for saving; convert from RGB
             cv2.imwrite(save_path, cv2.cvtColor(vis, cv2.COLOR_RGB2BGR))
         if show:
-            cv2.imshow("dst | src | adjusted", cv2.cvtColor(vis, cv2.COLOR_RGB2BGR))
+            cv2.imshow("dst | src | adjusted",
+                       cv2.cvtColor(vis, cv2.COLOR_RGB2BGR))
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
@@ -125,9 +130,12 @@ def parse_args():
     p = argparse.ArgumentParser(description="Brightness match (PyTorch 2.8.0)")
     p.add_argument("src", type=str, help="Path to source (reference) image")
     p.add_argument("dst", type=str, help="Path to target image to be adjusted")
-    p.add_argument("--out", type=str, default=None, help="Optional save path for side-by-side preview")
-    p.add_argument("--mode", type=str, default="luma", choices=["luma", "channels"], help="Scaling mode")
-    p.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "cuda"], help="Torch device")
+    p.add_argument("--out", type=str, default=None,
+                   help="Optional save path for side-by-side preview")
+    p.add_argument("--mode", type=str, default="luma",
+                   choices=["luma", "channels"], help="Scaling mode")
+    p.add_argument("--device", type=str, default="auto",
+                   choices=["auto", "cpu", "cuda"], help="Torch device")
     p.add_argument("--show", action="store_true", help="Show preview window")
     p.add_argument("--verbose", action="store_true", help="Print stats")
     return p.parse_args()
@@ -146,7 +154,8 @@ def main():
     dst = read_img(args.dst, device)
 
     with torch.no_grad():
-        adjusted = adjust_brightness_from_src_to_dst(dst, src, save_path=args.out, show=args.show, verbose=args.verbose, mode=args.mode)
+        adjusted = adjust_brightness_from_src_to_dst(
+            dst, src, save_path=args.out, show=args.show, verbose=args.verbose, mode=args.mode)
 
     out_single = args.out
     if out_single is None:
