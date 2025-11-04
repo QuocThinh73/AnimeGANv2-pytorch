@@ -206,5 +206,5 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# vgg16 weight npy
-vgg16_weight/vgg16.npy
+# Data
+data/
