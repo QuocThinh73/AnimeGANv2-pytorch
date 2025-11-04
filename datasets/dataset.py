@@ -8,11 +8,11 @@ from .transforms import build_transforms
 
 
 class Photo2AnimeDataset(Dataset):
-    def __init__(self, mode: Literal["cyclegan", "animegan"], photo_root: str, anime_style_root: str, anime_smooth_root: str | None = None, train: bool = True, image_size: int = 256):
-        self.mode = mode
-        if self.mode not in ["cyclegan", "animegan"]:
+    def __init__(self, model: Literal["cyclegan", "animegan"], photo_root: str, anime_style_root: str, anime_smooth_root: str | None = None, train: bool = True, image_size: int = 256):
+        self.model = model
+        if self.model not in ["cyclegan", "animegan"]:
             raise ValueError(
-                f"Không hỗ trợ mô hình {self.mode}. Chỉ hỗ trợ mô hình CycleGAN và AnimeGAN.")
+                f"Không hỗ trợ mô hình {self.model}. Chỉ hỗ trợ mô hình CycleGAN và AnimeGAN.")
 
         self.photo_paths = self._list_images(photo_root)
         if not self.photo_paths:
@@ -22,7 +22,7 @@ class Photo2AnimeDataset(Dataset):
         if not self.anime_style_paths:
             raise RuntimeError(f"Không tìm thấy ảnh trong {anime_style_root}")
 
-        if self.mode == "animegan":
+        if self.model == "animegan":
             if anime_smooth_root is None:
                 raise ValueError(
                     "Không được để trống anime_smooth_root khi mode là AnimeGAN.")
@@ -33,10 +33,10 @@ class Photo2AnimeDataset(Dataset):
 
         self.transforms = build_transforms(train, image_size)
 
-        if self.mode == "cyclegan":
+        if self.model == "cyclegan":
             self.length = max(len(self.photo_paths),
                               len(self.anime_style_paths))
-        elif self.mode == "animegan":
+        elif self.model == "animegan":
             self.length = len(self.photo_paths)
 
     def __len__(self) -> int:
@@ -53,7 +53,7 @@ class Photo2AnimeDataset(Dataset):
         anime_style_image = Image.open(anime_style_path).convert("RGB")
         anime_style_image = self.transforms(anime_style_image)
 
-        if self.mode == "cyclegan":
+        if self.model == "cyclegan":
             return {
                 "photo_image": photo_image,
                 "anime_style_image": anime_style_image,
@@ -61,7 +61,7 @@ class Photo2AnimeDataset(Dataset):
                 "anime_style_path": anime_style_path
             }
 
-        elif self.mode == "animegan":
+        elif self.model == "animegan":
             # Anime Smooth
             anime_smooth_path = random.choice(self.anime_smooth_paths)
             anime_smooth_image = Image.open(anime_smooth_path).convert("RGB")
