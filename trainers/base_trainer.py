@@ -27,7 +27,7 @@ class BaseTrainer:
         self.build_optim()
         step = 0
         for epoch in tqdm(range(1, self.args.epochs + 1), desc="Training"):
-            for batch in tqdm(self.loader, desc="Training", leave=False):
+            for batch in self.loader:
                 step += 1
                 self.train_one_step(batch, step)
             self.on_epoch_end(epoch)
