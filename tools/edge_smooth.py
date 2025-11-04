@@ -5,7 +5,7 @@ from glob import glob
 import numpy as np
 import torch
 import torch.nn.functional as F
-from tools.utils import check_folder
+# from tools.utils import check_folder
 
 
 def parse_args():
@@ -56,7 +56,7 @@ def make_edge_smooth(dataset_name, img_size, device_pref='auto'):
     root = os.path.dirname(os.path.dirname(__file__))
     in_dir = os.path.join(root, 'dataset', dataset_name, 'style')
     out_dir = os.path.join(root, 'dataset', dataset_name, 'smooth')
-    check_folder(out_dir)
+    # check_folder(out_dir)
     file_list = sorted(glob(os.path.join(in_dir, '*.*')))
 
     if device_pref == 'auto':
