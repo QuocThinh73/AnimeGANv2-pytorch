@@ -1,1 +1,1 @@
-# AnimeGANv2-pytorch
+# Anime-style transfer
