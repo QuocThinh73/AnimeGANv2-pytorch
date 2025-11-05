@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Venv
+.venv/
+env/
+*.egg-info/
+
+# Data & outputs (sẽ mount từ host)
+data/
+runs/
+
+# Git & IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# OS
+.DS_Store
