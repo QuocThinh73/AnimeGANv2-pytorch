@@ -30,6 +30,17 @@ class CycleGANTrainer(BaseTrainer):
         os.makedirs(self.sample_dir, exist_ok=True)
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
+        # Logger
+        self.logger = {
+            "G": 0.0,
+            "D_photo": 0.0,
+            "D_anime": 0.0,
+            "n": 0
+        }
+
+        self._last_fake_photo = None
+        self._last_fake_anime = None
+
     def build_optim(self):
         args = self.args
 
@@ -41,10 +52,16 @@ class CycleGANTrainer(BaseTrainer):
         self.optimizer_D_anime = torch.optim.Adam(
             self.D_anime.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
+        decay_len = args.epochs - args.decay_epoch
+
         # Learning rate schedulers
-        def lambda_rule(epoch):
+        def lambda_rule(epoch: int):
             e = epoch + 1
-            return 1.0 - max(0, e - args.decay_epoch) / (args.epochs - args.decay_epoch)
+            if e <= args.decay_epoch:
+                return 1.0
+            frac = (e - args.decay_epoch) / decay_len
+            return max(0.0, 1.0 - frac)
+
         self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer_G, lambda_rule)
         self.lr_scheduler_D_photo = torch.optim.lr_scheduler.LambdaLR(
@@ -56,18 +73,34 @@ class CycleGANTrainer(BaseTrainer):
         return x * 0.5 + 0.5
 
     @torch.no_grad()
-    def _save_samples(self, fake_photo: torch.Tensor, fake_anime: torch.Tensor, step: int):
+    def _save_samples(self, fake_photo: torch.Tensor, fake_anime: torch.Tensor, epoch: int):
         save_image(self._denorm(fake_photo)[:4], os.path.join(
-            self.sample_dir, f"fake_photo_{step}.png"), nrow=2)
+            self.sample_dir, f"fake_photo_epoch_{epoch:03d}.png"), nrow=2)
         save_image(self._denorm(fake_anime)[:4], os.path.join(
-            self.sample_dir, f"fake_anime_{step}.png"), nrow=2)
+            self.sample_dir, f"fake_anime_epoch_{epoch:03d}.png"), nrow=2)
+
+    def _save_checkpoints(self, epoch: int):
+        ckpt_epoch_dir = os.path.join(self.ckpt_dir, f"epoch_{epoch:03d}")
+        os.makedirs(ckpt_epoch_dir, exist_ok=True)
+        torch.save(self.G_photo2anime.state_dict(), os.path.join(
+            ckpt_epoch_dir, "G_photo2anime.pth"))
+        torch.save({
+            "G_photo2anime": self.G_photo2anime.state_dict(),
+            "G_anime2photo": self.G_anime2photo.state_dict(),
+            "D_photo": self.D_photo.state_dict(),
+            "D_anime": self.D_anime.state_dict(),
+            "opt_G": self.optimizer_G.state_dict(),
+            "opt_D_photo": self.optimizer_D_photo.state_dict(),
+            "opt_D_anime": self.optimizer_D_anime.state_dict(),
+            "epoch": epoch,
+        }, os.path.join(ckpt_epoch_dir, "ckpt.pth"))
 
     def train_one_step(self, batch: dict, step: int):
         device = self.device
         real_photo = batch["photo_image"].to(device)
         real_anime = batch["anime_style_image"].to(device)
 
-        ######### Generatos #########
+        ######### Generators #########
         self.optimizer_G.zero_grad()
 
         # Identity loss
@@ -144,15 +177,15 @@ class CycleGANTrainer(BaseTrainer):
 
         #########################################################
 
-        if step % 100 == 0:
-            print(
-                f"[{step}] "
-                f"G: {loss_G.item():.3f} "
-                f"| D_photo: {loss_D_photo.item():.3f} | D_anime: {loss_D_anime.item():.3f}"
-            )
+        # Logging
+        self.logger["G"] += float(loss_G.item())
+        self.logger["D_photo"] += float(loss_D_photo.item())
+        self.logger["D_anime"] += float(loss_D_anime.item())
+        self.logger["n"] += 1
 
-        if step % self.args.sample_every == 0:
-            self._save_samples(fake_photo, fake_anime, step)
+        with torch.no_grad():
+            self._last_fake_photo = fake_photo.detach().cpu()
+            self._last_fake_anime = fake_anime.detach().cpu()
 
     def on_epoch_end(self, epoch: int):
         # Update learning rates
@@ -160,16 +193,22 @@ class CycleGANTrainer(BaseTrainer):
         self.lr_scheduler_D_photo.step()
         self.lr_scheduler_D_anime.step()
 
+        # Logging
+        n = max(self.logger["n"], 1)
+        avg_G = self.logger["G"] / n
+        avg_D_photo = self.logger["D_photo"] / n
+        avg_D_anime = self.logger["D_anime"] / n
+        print(
+            f"[Epoch {epoch}] | G: {avg_G:.3f} | D_photo: {avg_D_photo:.3f} | D_anime: {avg_D_anime:.3f}")
+
+        # Save samples
+        if (self._last_fake_photo is not None) and (self._last_fake_anime is not None):
+            self._save_samples(self._last_fake_photo,
+                               self._last_fake_anime, epoch)
+
+        # Reset logger
+        self.logger = {"G": 0.0, "D_photo": 0.0, "D_anime": 0.0, "n": 0}
+
         # Save models checkpoints
         if epoch % self.args.save_every == 0:
-            ckpt_path = os.path.join(self.ckpt_dir, f"epoch_{epoch:03d}.pth")
-            torch.save({
-                "epoch": epoch,
-                "G_photo2anime": self.G_photo2anime.state_dict(),
-                "G_anime2photo": self.G_anime2photo.state_dict(),
-                "D_photo": self.D_photo.state_dict(),
-                "D_anime": self.D_anime.state_dict(),
-                "opt_G": self.optimizer_G.state_dict(),
-                "opt_D_photo": self.optimizer_D_photo.state_dict(),
-                "opt_D_anime": self.optimizer_D_anime.state_dict(),
-            }, ckpt_path)
+            self._save_checkpoints(epoch)

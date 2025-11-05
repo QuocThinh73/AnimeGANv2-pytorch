@@ -30,9 +30,8 @@ def parse_args():
     p.add_argument("--lambda_idt", type=float, default=5.0)
 
     # IO
-    p.add_argument("--out_dir", type=str, default="runs")
+    p.add_argument("--out_dir", type=str, default="output")
     p.add_argument("--save_every", type=int, default=1)
-    p.add_argument("--sample_every", type=int, default=200)
 
     # Random seed
     p.add_argument("--seed", type=int, default=42)
