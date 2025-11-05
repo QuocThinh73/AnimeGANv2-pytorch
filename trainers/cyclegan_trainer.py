@@ -5,6 +5,8 @@ from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
 from losses import AdversarialLoss, CycleConsistencyLoss, IdentityLoss
+from utils.lr_scheduler import LambdaLR
+from utils.weights_init_normal import weights_init_normal
 
 
 class CycleGANTrainer(BaseTrainer):
@@ -18,6 +20,12 @@ class CycleGANTrainer(BaseTrainer):
             in_channels=3, out_channels=3).to(self.device)
         self.D_photo = CycleGANDiscriminator(in_channels=3).to(self.device)
         self.D_anime = CycleGANDiscriminator(in_channels=3).to(self.device)
+
+        if not args.resume:
+            self.G_photo2anime.apply(weights_init_normal)
+            self.G_anime2photo.apply(weights_init_normal)
+            self.D_photo.apply(weights_init_normal)
+            self.D_anime.apply(weights_init_normal)
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss()
@@ -52,22 +60,15 @@ class CycleGANTrainer(BaseTrainer):
         self.optimizer_D_anime = torch.optim.Adam(
             self.D_anime.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
-        decay_len = args.epochs - args.decay_epoch
-
         # Learning rate schedulers
-        def lambda_rule(epoch: int):
-            e = epoch + 1
-            if e <= args.decay_epoch:
-                return 1.0
-            frac = (e - args.decay_epoch) / decay_len
-            return max(0.0, 1.0 - frac)
-
+        lr_lambda = LambdaLR(
+            n_epochs=args.num_epochs, offset=args.start_epoch, decay_start_epoch=args.decay_epoch)
         self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
-            self.optimizer_G, lambda_rule)
+            self.optimizer_G, lr_lambda=lr_lambda.step)
         self.lr_scheduler_D_photo = torch.optim.lr_scheduler.LambdaLR(
-            self.optimizer_D_photo, lambda_rule)
+            self.optimizer_D_photo, lr_lambda=lr_lambda.step)
         self.lr_scheduler_D_anime = torch.optim.lr_scheduler.LambdaLR(
-            self.optimizer_D_anime, lambda_rule)
+            self.optimizer_D_anime, lr_lambda=lr_lambda.step)
 
     def _denorm(self, x: torch.Tensor) -> torch.Tensor:
         return x * 0.5 + 0.5
