@@ -4,7 +4,7 @@ STYLE="${1:?}"
 GPU_ID="${2:?}"
 BATCH="${3:-8}"
 NUM_WORKERS="${4:-4}"
-OUT_ROOT="${5:-/workspace/output/cyclegan}"
+OUT_ROOT="${5:-/workspace/output}"
 
 IMG="cyclegan-trainer:cu118"
 NAME="cyclegan-${STYLE,,}-gpu${GPU_ID}"
