@@ -5,8 +5,7 @@ from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
 from losses import AdversarialLoss, CycleConsistencyLoss, IdentityLoss
-from utils.lr_scheduler import LambdaLR
-from utils.weights_init_normal import weights_init_normal
+from utils import LambdaLR, weights_init_normal
 
 
 class CycleGANTrainer(BaseTrainer):
