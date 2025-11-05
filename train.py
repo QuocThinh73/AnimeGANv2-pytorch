@@ -19,7 +19,7 @@ def parse_args():
     # Train
     p.add_argument("--batch_size", type=int, default=4)
     p.add_argument("--num_workers", type=int, default=1)
-    p.add_argument("--epochs", type=int, default=200)
+    p.add_argument("--num_epochs", type=int, default=200)
 
     # Optimizer
     p.add_argument("--lr", type=float, default=0.0002)
@@ -35,6 +35,10 @@ def parse_args():
 
     # Random seed
     p.add_argument("--seed", type=int, default=42)
+
+    # Resume
+    p.add_argument("--resume", action="store_true")
+    p.add_argument("--start_epoch", type=int, default=0)
 
     return p.parse_args()
 
