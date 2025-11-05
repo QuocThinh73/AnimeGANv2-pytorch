@@ -1,25 +1,25 @@
 import torch
-from typing import override
 from tqdm import tqdm
+from abc import ABC, abstractmethod
 
 
-class BaseTrainer:
+class BaseTrainer(ABC):
     def __init__(self, args, loader):
         self.args = args
         self.loader = loader
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-    @override
+    @abstractmethod
     def build_models(self): pass
 
-    @override
+    @abstractmethod
     def build_optim(self): pass
 
-    @override
+    @abstractmethod
     def train_one_step(self, batch, step): pass
 
-    @override
+    @abstractmethod
     def on_epoch_end(self, epoch): pass
 
     def run(self):
