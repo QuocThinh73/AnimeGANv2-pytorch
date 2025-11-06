@@ -234,7 +234,7 @@ class CycleGANTrainer(BaseTrainer):
         self.logger = {"G": 0.0, "D_photo": 0.0, "D_anime": 0.0, "n": 0}
 
         # Save
-        if epoch % self.args.save_every == 0:
+        if epoch % self.args.save_every == 0 and self._last_fake_photo is not None and self._last_fake_anime is not None:
             self._save_checkpoints(epoch)
             self._save_samples(self._last_fake_photo,
                                self._last_fake_anime, epoch)
