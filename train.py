@@ -31,7 +31,7 @@ def parse_args():
 
     # IO
     p.add_argument("--out_dir", type=str, default="output")
-    p.add_argument("--save_every", type=int, default=5)
+    p.add_argument("--save_every", type=int, default=10)
 
     # Random seed
     p.add_argument("--seed", type=int, default=42)
