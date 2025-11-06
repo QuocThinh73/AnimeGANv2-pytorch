@@ -1,5 +1,5 @@
 from .base_trainer import BaseTrainer
-
+from models import AnimeGANGenerator, AnimeGANDiscriminator
 
 class AnimeGANTrainer(BaseTrainer):
     def build_models(self): pass
