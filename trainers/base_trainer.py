@@ -1,3 +1,4 @@
+import os
 import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
@@ -26,7 +27,10 @@ class BaseTrainer(ABC):
         self.build_models()
         self.build_optim()
         step = 0
-        for epoch in tqdm(range(1, self.args.num_epochs + 1), desc="Training"):
+        first_epoch = self.args.start_epoch + 1 if self.args.resume else 1
+
+        for epoch in tqdm(range(first_epoch, self.args.num_epochs + 1),
+                          desc=f"Training {self.args.model} from epoch {first_epoch} to {self.args.num_epochs}"):
             for batch in self.loader:
                 step += 1
                 self.train_one_step(batch, step)

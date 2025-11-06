@@ -21,11 +21,21 @@ class CycleGANTrainer(BaseTrainer):
         self.D_photo = CycleGANDiscriminator(in_channels=3).to(self.device)
         self.D_anime = CycleGANDiscriminator(in_channels=3).to(self.device)
 
+        # Initialize weights
         if not args.resume:
             self.G_photo2anime.apply(weights_init_normal)
             self.G_anime2photo.apply(weights_init_normal)
             self.D_photo.apply(weights_init_normal)
             self.D_anime.apply(weights_init_normal)
+        # Load checkpoints
+        else:
+            ckpt_path = os.path.join(args.ckpt_dir, "ckpt.pth")
+            state_dict = torch.load(ckpt_path, map_location=self.device)
+
+            self.G_photo2anime.load_state_dict(state_dict["G_photo2anime"])
+            self.G_anime2photo.load_state_dict(state_dict["G_anime2photo"])
+            self.D_photo.load_state_dict(state_dict["D_photo"])
+            self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss()
@@ -60,7 +70,15 @@ class CycleGANTrainer(BaseTrainer):
         self.optimizer_D_anime = torch.optim.Adam(
             self.D_anime.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
-        # Learning rate schedulers
+        # Load checkpoints
+        if self.args.resume:
+            ckpt_path = os.path.join(args.ckpt_dir, "ckpt.pth")
+            state_dict = torch.load(ckpt_path, map_location=self.device)
+            self.optimizer_G.load_state_dict(state_dict["opt_G"])
+            self.optimizer_D_photo.load_state_dict(state_dict["opt_D_photo"])
+            self.optimizer_D_anime.load_state_dict(state_dict["opt_D_anime"])
+
+            # Learning rate schedulers
         lr_lambda = LambdaLR(
             n_epochs=args.num_epochs, offset=args.start_epoch, decay_start_epoch=args.decay_epoch)
         self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
@@ -202,14 +220,11 @@ class CycleGANTrainer(BaseTrainer):
         print(
             f"[Epoch {epoch}] | G: {avg_G:.3f} | D_photo: {avg_D_photo:.3f} | D_anime: {avg_D_anime:.3f}")
 
-        # Save samples
-        if (self._last_fake_photo is not None) and (self._last_fake_anime is not None):
-            self._save_samples(self._last_fake_photo,
-                               self._last_fake_anime, epoch)
-
         # Reset logger
         self.logger = {"G": 0.0, "D_photo": 0.0, "D_anime": 0.0, "n": 0}
 
-        # Save models checkpoints
+        # Save
         if epoch % self.args.save_every == 0:
             self._save_checkpoints(epoch)
+            self._save_samples(self._last_fake_photo,
+                               self._last_fake_anime, epoch)

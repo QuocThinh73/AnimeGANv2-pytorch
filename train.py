@@ -31,7 +31,7 @@ def parse_args():
 
     # IO
     p.add_argument("--out_dir", type=str, default="output")
-    p.add_argument("--save_every", type=int, default=1)
+    p.add_argument("--save_every", type=int, default=5)
 
     # Random seed
     p.add_argument("--seed", type=int, default=42)
@@ -39,6 +39,7 @@ def parse_args():
     # Resume
     p.add_argument("--resume", action="store_true")
     p.add_argument("--start_epoch", type=int, default=0)
+    p.add_argument("--ckpt_dir", type=str, default=None)
 
     return p.parse_args()
 
