@@ -19,11 +19,11 @@ def parse_args():
     # Train
     p.add_argument("--batch_size", type=int, default=4)
     p.add_argument("--num_workers", type=int, default=1)
-    p.add_argument("--num_epochs", type=int, default=100)
+    p.add_argument("--num_epochs", type=int, default=200)
 
     # Optimizer
     p.add_argument("--lr", type=float, default=0.0002)
-    p.add_argument("--decay_epoch", type=int, default=50)
+    p.add_argument("--decay_epoch", type=int, default=100)
 
     # Losses
     p.add_argument("--lambda_cyc", type=float, default=10.0)

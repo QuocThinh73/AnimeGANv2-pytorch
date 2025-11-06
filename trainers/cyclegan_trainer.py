@@ -7,6 +7,7 @@ from models import CycleGANGenerator, CycleGANDiscriminator
 from losses import AdversarialLoss, CycleConsistencyLoss, IdentityLoss
 from utils.lr_scheduler import LambdaLR
 from utils.weights_init_normal import weights_init_normal
+from utils.replay_buffer import ReplayBuffer
 
 
 class CycleGANTrainer(BaseTrainer):
@@ -58,6 +59,10 @@ class CycleGANTrainer(BaseTrainer):
 
         self._last_fake_photo = None
         self._last_fake_anime = None
+        
+        # Replay buffers
+        self.photo_buffer = ReplayBuffer()
+        self.anime_buffer = ReplayBuffer()
 
     def build_optim(self):
         args = self.args
@@ -78,7 +83,7 @@ class CycleGANTrainer(BaseTrainer):
             self.optimizer_D_photo.load_state_dict(state_dict["opt_D_photo"])
             self.optimizer_D_anime.load_state_dict(state_dict["opt_D_anime"])
 
-            # Learning rate schedulers
+        # Learning rate schedulers
         lr_lambda = LambdaLR(
             n_epochs=args.num_epochs, offset=args.start_epoch, decay_start_epoch=args.decay_epoch)
         self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
@@ -158,6 +163,11 @@ class CycleGANTrainer(BaseTrainer):
         self.optimizer_G.step()
         #########################################################
 
+        # Save samples for logging
+        with torch.no_grad():
+            self._last_fake_photo = fake_photo.detach().cpu()
+            self._last_fake_anime = fake_anime.detach().cpu()
+    
         ######### Photo Discriminator #########
         self.optimizer_D_photo.zero_grad()
 
@@ -166,7 +176,9 @@ class CycleGANTrainer(BaseTrainer):
         loss_D_photo_real = self.criterion_GAN(pred_real_photo, 1.0)
 
         # Fake loss
-        pred_fake_photo = self.D_photo(fake_photo.detach())
+        fake_photo = fake_photo.detach()
+        fake_photo = self.photo_buffer.push_and_pop(fake_photo)
+        pred_fake_photo = self.D_photo(fake_photo)
         loss_D_photo_fake = self.criterion_GAN(pred_fake_photo, 0.0)
 
         # Total discriminator loss
@@ -185,7 +197,9 @@ class CycleGANTrainer(BaseTrainer):
         loss_D_anime_real = self.criterion_GAN(pred_real_anime, 1.0)
 
         # Fake loss
-        pred_fake_anime = self.D_anime(fake_anime.detach())
+        fake_anime = fake_anime.detach()
+        fake_anime = self.anime_buffer.push_and_pop(fake_anime)
+        pred_fake_anime = self.D_anime(fake_anime)
         loss_D_anime_fake = self.criterion_GAN(pred_fake_anime, 0.0)
 
         # Total discriminator loss
@@ -201,10 +215,6 @@ class CycleGANTrainer(BaseTrainer):
         self.logger["D_photo"] += float(loss_D_photo.item())
         self.logger["D_anime"] += float(loss_D_anime.item())
         self.logger["n"] += 1
-
-        with torch.no_grad():
-            self._last_fake_photo = fake_photo.detach().cpu()
-            self._last_fake_anime = fake_anime.detach().cpu()
 
     def on_epoch_end(self, epoch: int):
         # Update learning rates
