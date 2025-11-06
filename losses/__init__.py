@@ -1,2 +1,2 @@
-from .cyclegan import AdversarialLoss, CycleConsistencyLoss, IdentityLoss
-from .animegan import AdversarialLoss, ContentLoss, GrayscaleStyleLoss, ColorReconstructionLoss
+from .cyclegan import CycleGANAdversarialLoss, CycleGANConsistencyLoss, CycleGANIdentityLoss
+from .animegan import AnimeGANAdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss

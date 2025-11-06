@@ -1,5 +1,7 @@
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
+from losses import AnimeGANAdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
+
 
 class AnimeGANTrainer(BaseTrainer):
     def build_models(self): pass
