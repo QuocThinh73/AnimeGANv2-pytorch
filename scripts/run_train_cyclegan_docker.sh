@@ -11,8 +11,6 @@ NAME="cyclegan-${STYLE,,}-gpu${GPU_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 OUT_DIR="/workspace/output/${STYLE}"
-BASE_CKPT_ROOT="${OUT_DIR}/cyclegan/checkpoints"
-CKPT_DIR="$(printf "%s/epoch_%03d" "${BASE_CKPT_ROOT}" "${START_EPOCH}")"
 
 NUM_EPOCHS=100
 SAVE_EVERY=5
@@ -21,6 +19,10 @@ NUM_WORKERS=4
 IMAGE_SIZE=256
 DECAY_EPOCH=50
 LR=0.0002
+
+HOST_OUT_ROOT="$(pwd)/output"
+HOST_CKPT_DIR="${HOST_OUT_ROOT}/${STYLE}/cyclegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
+CONT_CKPT_DIR="/workspace/output/${STYLE}/cyclegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then
   echo "Container $NAME exists. Removing..."
@@ -42,15 +44,15 @@ CMD_ARGS=(
 )
 
 if [[ "$RESUME" == "1" ]]; then
-  if [[ ! -f "${CKPT_DIR}/ckpt.pth" ]]; then
-    echo "[ERROR] Resume=1 nhưng không thấy checkpoint: ${CKPT_DIR}/ckpt.pth"
+  if [[ ! -f "${HOST_CKPT_DIR}/ckpt.pth" ]]; then
+    echo "[ERROR] Resume=1 nhưng không thấy checkpoint (host): ${HOST_CKPT_DIR}/ckpt.pth"
+    echo "Gợi ý: find output -maxdepth 4 -name ckpt.pth"
     exit 1
   fi
-  echo "[RESUME] Using checkpoint: ${CKPT_DIR}  (start_epoch=${START_EPOCH})"
-  CMD_ARGS+=( --resume --start_epoch "$START_EPOCH" --ckpt_dir "$CKPT_DIR" )
+  echo "[RESUME] Using checkpoint: ${CONT_CKPT_DIR}  (start_epoch=${START_EPOCH})"
+  CMD_ARGS+=( --resume --start_epoch "$START_EPOCH" --ckpt_dir "$CONT_CKPT_DIR" )
 fi
 
-# Chạy container
 docker run -d \
   --name "$NAME" \
   --gpus "device=${GPU_ID}" \
