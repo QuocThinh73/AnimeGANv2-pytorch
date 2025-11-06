@@ -19,29 +19,55 @@ class ContentLoss(nn.Module):
     def __init__(self, lambda_con: float = 1.5, backbone: Literal["vgg16", "vgg19"] = "vgg16"):
         super().__init__()
         self.lambda_con = float(lambda_con)
+        self.l1_loss = nn.L1Loss()
         if backbone == "vgg16":
             self.vgg = VGG16Features()
         elif backbone == "vgg19":
             self.vgg = VGG19Features()
-        self.l1_loss = nn.L1Loss()
 
-    def forward(self, fake_photo: torch.Tensor, real_photo: torch.Tensor) -> torch.Tensor:
-        fake_features = self.vgg(fake_photo)
-        real_features = self.vgg(real_photo)
-        return self.lambda_con * self.l1_loss(fake_features, real_features)
+    def forward(self, fake_anime: torch.Tensor, real_photo: torch.Tensor) -> torch.Tensor:
+        fake_anime_features = self.vgg(fake_anime)
+        real_photo_features = self.vgg(real_photo)
+        return self.lambda_con * self.l1_loss(fake_anime_features, real_photo_features)
 
 
 class GrayscaleStyleLoss(nn.Module):
-    def __init__(self, lambda_gra: float = 10.0):
+    def __init__(self, lambda_gra: float = 10.0, backbone: Literal["vgg16", "vgg19"] = "vgg16"):
         super().__init__()
         self.lambda_gra = float(lambda_gra)
         self.l1_loss = nn.L1Loss()
+        if backbone == "vgg16":
+            self.vgg = VGG16Features()
+        elif backbone == "vgg19":
+            self.vgg = VGG19Features()
 
-    def forward(self):
-        pass
+    def forward(self, fake_anime: torch.Tensor, real_anime: torch.Tensor) -> torch.Tensor:
+        fake_anime_gray = self._rgb_to_gray(fake_anime)
+        real_anime_gray = self._rgb_to_gray(real_anime)
+
+        fake_anime_gray_features = self.vgg(fake_anime_gray)
+        real_anime_gray_features = self.vgg(real_anime_gray)
+
+        return self.lambda_gra * self.l1_loss(
+            self._gram_matrix(fake_anime_gray_features),
+            self._gram_matrix(real_anime_gray_features)
+        )
 
     def _rgb_to_gray(self, image_rgb: torch.Tensor) -> torch.Tensor:
-        pass
+        r = image_rgb[:, 0:1, :, :]
+        g = image_rgb[:, 1:2, :, :]
+        b = image_rgb[:, 2:3, :, :]
+
+        gray = 0.299 * r + 0.587 * g + 0.114 * b
+        gray = gray.expand(-1, 3, -1, -1).contiguous()
+        return gray
+
+    def _gram_matrix(self, image: torch.Tensor) -> torch.Tensor:
+        # https://docs.pytorch.org/tutorials/advanced/neural_style_tutorial.html#style-loss
+        n, c, h, w = image.size()
+        features = image.view(n, c, h * w)
+        G = torch.bmm(features, features.transpose(1, 2)) / (c * h * w)
+        return G
 
 
 class ColorReconstructionLoss(nn.Module):
@@ -51,14 +77,14 @@ class ColorReconstructionLoss(nn.Module):
         self.l1_loss = nn.L1Loss()
         self.huber_loss = nn.HuberLoss()
 
-    def forward(self, generated_photo_rgb: torch.Tensor, real_photo_rgb: torch.Tensor) -> torch.Tensor:
-        generated_yuv = self._rgb_to_yuv(generated_photo_rgb)
-        real_yuv = self._rgb_to_yuv(real_photo_rgb)
-        loss_y = self.l1_loss(generated_yuv[:, 0:1], real_yuv[:, 0:1])
-        loss_u = self.huber_loss(
-            generated_yuv[:, 1:2], real_yuv[:, 1:2], delta=1.0)
-        loss_v = self.huber_loss(
-            generated_yuv[:, 2:3], real_yuv[:, 2:3], delta=1.0)
+    def forward(self, fake_anime_rgb: torch.Tensor, real_photo_rgb: torch.Tensor) -> torch.Tensor:
+        fake_anime_y, fake_anime_u, fake_anime_v = self._rgb_to_yuv(
+            fake_anime_rgb)
+        real_photo_y, real_photo_u, real_photo_v = self._rgb_to_yuv(
+            real_photo_rgb)
+        loss_y = self.l1_loss(fake_anime_y, real_photo_y)
+        loss_u = self.huber_loss(fake_anime_u, real_photo_u)
+        loss_v = self.huber_loss(fake_anime_v, real_photo_v)
         return self.lambda_col * (loss_y + loss_u + loss_v)
 
     def _rgb_to_yuv(self, image_rgb: torch.Tensor) -> torch.Tensor:
