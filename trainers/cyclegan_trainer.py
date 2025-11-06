@@ -4,7 +4,7 @@ import torch
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
-from losses import AdversarialLoss, CycleConsistencyLoss, IdentityLoss
+from losses import CycleGANAdversarialLoss, CycleGANCycleConsistencyLoss, CycleGANIdentityLoss
 from utils.lr_scheduler import LambdaLR
 from utils.weights_init_normal import weights_init_normal
 from utils.replay_buffer import ReplayBuffer
@@ -35,13 +35,17 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss()
-        self.criterion_cycle = CycleConsistencyLoss(lambda_cyc=self.args.lambda_cyc)
-        self.criterion_identity = IdentityLoss(lambda_idt=self.args.lambda_idt)
+        self.criterion_GAN = CycleGANAdversarialLoss()
+        self.criterion_cycle = CycleGANCycleConsistencyLoss(
+            lambda_cyc=self.args.lambda_cyc)
+        self.criterion_identity = CycleGANIdentityLoss(
+            lambda_idt=self.args.lambda_idt)
 
         # Output directories
-        self.sample_dir = os.path.join(self.args.out_dir, "cyclegan", "samples")
-        self.ckpt_dir = os.path.join(self.args.out_dir, "cyclegan", "checkpoints")
+        self.sample_dir = os.path.join(
+            self.args.out_dir, "cyclegan", "samples")
+        self.ckpt_dir = os.path.join(
+            self.args.out_dir, "cyclegan", "checkpoints")
         os.makedirs(self.sample_dir, exist_ok=True)
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
@@ -55,7 +59,7 @@ class CycleGANTrainer(BaseTrainer):
 
         self._last_fake_photo = None
         self._last_fake_anime = None
-        
+
         # Replay buffers
         self.photo_buffer = ReplayBuffer()
         self.anime_buffer = ReplayBuffer()
@@ -161,7 +165,7 @@ class CycleGANTrainer(BaseTrainer):
         with torch.no_grad():
             self._last_fake_photo = fake_photo.detach().cpu()
             self._last_fake_anime = fake_anime.detach().cpu()
-    
+
         ######### Photo Discriminator #########
         self.optimizer_D_photo.zero_grad()
 
