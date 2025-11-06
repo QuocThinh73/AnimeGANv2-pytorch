@@ -12,12 +12,12 @@ PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 OUT_DIR="/workspace/output/${STYLE}"
 
-NUM_EPOCHS=100
-SAVE_EVERY=5
+NUM_EPOCHS=200
+SAVE_EVERY=10
 BATCH=8
 NUM_WORKERS=4
 IMAGE_SIZE=256
-DECAY_EPOCH=50
+DECAY_EPOCH=100
 LR=0.0002
 
 HOST_OUT_ROOT="$(pwd)/output"
