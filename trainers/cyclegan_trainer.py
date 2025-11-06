@@ -15,12 +15,10 @@ class CycleGANTrainer(BaseTrainer):
         args = self.args
 
         # Networks
-        self.G_photo2anime = CycleGANGenerator(
-            in_channels=3, out_channels=3).to(self.device)
-        self.G_anime2photo = CycleGANGenerator(
-            in_channels=3, out_channels=3).to(self.device)
-        self.D_photo = CycleGANDiscriminator(in_channels=3).to(self.device)
-        self.D_anime = CycleGANDiscriminator(in_channels=3).to(self.device)
+        self.G_photo2anime = CycleGANGenerator().to(self.device)
+        self.G_anime2photo = CycleGANGenerator().to(self.device)
+        self.D_photo = CycleGANDiscriminator().to(self.device)
+        self.D_anime = CycleGANDiscriminator().to(self.device)
 
         # Initialize weights
         if not args.resume:

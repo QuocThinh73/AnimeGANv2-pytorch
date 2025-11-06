@@ -3,12 +3,12 @@ import torch.nn as nn
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_channels: int):
+    def __init__(self):
         super().__init__()
 
         # Convolutional blocks
         layers = [
-            nn.Conv2d(in_channels=in_channels, out_channels=64,
+            nn.Conv2d(in_channels=3, out_channels=64,
                       kernel_size=4, stride=2, padding=1),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
         ]
@@ -40,5 +40,5 @@ class Discriminator(nn.Module):
 
         self.model = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return self.model(input)

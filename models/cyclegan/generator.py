@@ -23,13 +23,13 @@ class ResnetBlock(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, num_residual_blocks: int = 9):
+    def __init__(self, num_residual_blocks: int = 9):
         super().__init__()
 
         # Initial convolution block
         layers = [
             nn.ReflectionPad2d(padding=3),
-            nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=7),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7),
             nn.InstanceNorm2d(num_features=64),
             nn.ReLU(inplace=True),
         ]
@@ -68,11 +68,11 @@ class Generator(nn.Module):
         # Output layer
         layers += [
             nn.ReflectionPad2d(padding=3),
-            nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=7),
+            nn.Conv2d(in_channels=64, out_channels=3, kernel_size=7),
             nn.Tanh(),
         ]
 
         self.model = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return self.model(input)
