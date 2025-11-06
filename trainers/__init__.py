@@ -1,4 +1,3 @@
-from typing import Literal
 from .cyclegan_trainer import CycleGANTrainer
 from .animegan_trainer import AnimeGANTrainer
 
