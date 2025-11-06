@@ -12,8 +12,6 @@ from utils.replay_buffer import ReplayBuffer
 
 class CycleGANTrainer(BaseTrainer):
     def build_models(self):
-        args = self.args
-
         # Networks
         self.G_photo2anime = CycleGANGenerator().to(self.device)
         self.G_anime2photo = CycleGANGenerator().to(self.device)
@@ -21,14 +19,14 @@ class CycleGANTrainer(BaseTrainer):
         self.D_anime = CycleGANDiscriminator().to(self.device)
 
         # Initialize weights
-        if not args.resume:
+        if not self.args.resume:
             self.G_photo2anime.apply(weights_init_normal)
             self.G_anime2photo.apply(weights_init_normal)
             self.D_photo.apply(weights_init_normal)
             self.D_anime.apply(weights_init_normal)
         # Load checkpoints
         else:
-            ckpt_path = os.path.join(args.ckpt_dir, "ckpt.pth")
+            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
             state_dict = torch.load(ckpt_path, map_location=self.device)
 
             self.G_photo2anime.load_state_dict(state_dict["G_photo2anime"])
@@ -38,12 +36,12 @@ class CycleGANTrainer(BaseTrainer):
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss()
-        self.criterion_cycle = CycleConsistencyLoss(lambda_cyc=args.lambda_cyc)
-        self.criterion_identity = IdentityLoss(lambda_idt=args.lambda_idt)
+        self.criterion_cycle = CycleConsistencyLoss(lambda_cyc=self.args.lambda_cyc)
+        self.criterion_identity = IdentityLoss(lambda_idt=self.args.lambda_idt)
 
         # Output directories
-        self.sample_dir = os.path.join(args.out_dir, "cyclegan", "samples")
-        self.ckpt_dir = os.path.join(args.out_dir, "cyclegan", "checkpoints")
+        self.sample_dir = os.path.join(self.args.out_dir, "cyclegan", "samples")
+        self.ckpt_dir = os.path.join(self.args.out_dir, "cyclegan", "checkpoints")
         os.makedirs(self.sample_dir, exist_ok=True)
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
@@ -63,19 +61,17 @@ class CycleGANTrainer(BaseTrainer):
         self.anime_buffer = ReplayBuffer()
 
     def build_optim(self):
-        args = self.args
-
         # Optimizers
         self.optimizer_G = torch.optim.Adam(itertools.chain(
-            self.G_photo2anime.parameters(), self.G_anime2photo.parameters()), lr=args.lr, betas=(0.5, 0.999))
+            self.G_photo2anime.parameters(), self.G_anime2photo.parameters()), lr=self.args.lr, betas=(0.5, 0.999))
         self.optimizer_D_photo = torch.optim.Adam(
-            self.D_photo.parameters(), lr=args.lr, betas=(0.5, 0.999))
+            self.D_photo.parameters(), lr=self.args.lr, betas=(0.5, 0.999))
         self.optimizer_D_anime = torch.optim.Adam(
-            self.D_anime.parameters(), lr=args.lr, betas=(0.5, 0.999))
+            self.D_anime.parameters(), lr=self.args.lr, betas=(0.5, 0.999))
 
         # Load checkpoints
         if self.args.resume:
-            ckpt_path = os.path.join(args.ckpt_dir, "ckpt.pth")
+            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
             state_dict = torch.load(ckpt_path, map_location=self.device)
             self.optimizer_G.load_state_dict(state_dict["opt_G"])
             self.optimizer_D_photo.load_state_dict(state_dict["opt_D_photo"])
@@ -83,7 +79,7 @@ class CycleGANTrainer(BaseTrainer):
 
         # Learning rate schedulers
         lr_lambda = LambdaLR(
-            n_epochs=args.num_epochs, offset=args.start_epoch, decay_start_epoch=args.decay_epoch)
+            n_epochs=self.args.num_epochs, offset=self.args.start_epoch, decay_start_epoch=self.args.decay_epoch)
         self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer_G, lr_lambda=lr_lambda.step)
         self.lr_scheduler_D_photo = torch.optim.lr_scheduler.LambdaLR(
