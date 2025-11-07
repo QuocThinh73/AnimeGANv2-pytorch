@@ -6,6 +6,7 @@ import torchvision.models as models
 class VGG19Features(nn.Module):
     def __init__(self, last_layer: int = 26):
         super().__init__()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # VGG19 features
         vgg = models.vgg19(weights=models.VGG19_Weights.IMAGENET1K_V1)
@@ -18,8 +19,8 @@ class VGG19Features(nn.Module):
         # ImageNet mean and std
         mean = torch.tensor([0.485, 0.456, 0.406]).float()
         std = torch.tensor([0.229, 0.224, 0.225]).float()
-        self.mean = mean.view(1, 3, 1, 1)
-        self.std = std.view(1, 3, 1, 1)
+        self.mean = mean.view(1, 3, 1, 1).to(self.device)
+        self.std = std.view(1, 3, 1, 1).to(self.device)
 
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
@@ -32,6 +33,7 @@ class VGG19Features(nn.Module):
 class VGG16Features(nn.Module):
     def __init__(self, last_layer: int = 22):
         super().__init__()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # VGG16 features
         vgg = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
@@ -44,8 +46,8 @@ class VGG16Features(nn.Module):
         # ImageNet mean and std
         mean = torch.tensor([0.485, 0.456, 0.406]).float()
         std = torch.tensor([0.229, 0.224, 0.225]).float()
-        self.mean = mean.view(1, 3, 1, 1)
-        self.std = std.view(1, 3, 1, 1)
+        self.mean = mean.view(1, 3, 1, 1).to(self.device)
+        self.std = std.view(1, 3, 1, 1).to(self.device)
 
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
