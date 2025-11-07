@@ -16,10 +16,10 @@ class VGG19Features(nn.Module):
             param.requires_grad = False
 
         # ImageNet mean and std
-        mean = torch.tensor([0.485, 0.456, 0.406]).float()
-        std = torch.tensor([0.229, 0.224, 0.225]).float()
-        self.mean = mean.view(1, 3, 1, 1)
-        self.std = std.view(1, 3, 1, 1)
+        self.register_buffer("mean", torch.tensor(
+            [0.485, 0.456, 0.406]).view(1, 3, 1, 1))
+        self.register_buffer("std", torch.tensor(
+            [0.229, 0.224, 0.225]).view(1, 3, 1, 1))
 
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
@@ -42,10 +42,10 @@ class VGG16Features(nn.Module):
             param.requires_grad = False
 
         # ImageNet mean and std
-        mean = torch.tensor([0.485, 0.456, 0.406]).float()
-        std = torch.tensor([0.229, 0.224, 0.225]).float()
-        self.mean = mean.view(1, 3, 1, 1)
-        self.std = std.view(1, 3, 1, 1)
+        self.register_buffer("mean", torch.tensor(
+            [0.485, 0.456, 0.406]).view(1, 3, 1, 1))
+        self.register_buffer("std", torch.tensor(
+            [0.229, 0.224, 0.225]).view(1, 3, 1, 1))
 
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
