@@ -34,3 +34,7 @@ class BaseTrainer(ABC):
                 step += 1
                 self.train_one_step(batch, step)
             self.on_epoch_end(epoch)
+
+    @torch.no_grad()
+    def _denorm(self, x: torch.Tensor) -> torch.Tensor:
+        return x * 0.5 + 0.5

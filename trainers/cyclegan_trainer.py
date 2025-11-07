@@ -6,7 +6,6 @@ from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
 from losses import CycleGANAdversarialLoss, CycleGANCycleConsistencyLoss, CycleGANIdentityLoss
 from utils.lr_scheduler import LambdaLR
-from utils.weights_init_normal import weights_init_normal
 from utils.replay_buffer import ReplayBuffer
 
 
@@ -20,6 +19,7 @@ class CycleGANTrainer(BaseTrainer):
 
         # Initialize weights
         if not self.args.resume:
+            from utils.weights_init_normal import weights_init_normal
             self.G_photo2anime.apply(weights_init_normal)
             self.G_anime2photo.apply(weights_init_normal)
             self.D_photo.apply(weights_init_normal)
@@ -91,9 +91,6 @@ class CycleGANTrainer(BaseTrainer):
         self.lr_scheduler_D_anime = torch.optim.lr_scheduler.LambdaLR(
             self.optimizer_D_anime, lr_lambda=lr_lambda.step)
 
-    def _denorm(self, x: torch.Tensor) -> torch.Tensor:
-        return x * 0.5 + 0.5
-
     @torch.no_grad()
     def _save_samples(self, fake_photo: torch.Tensor, fake_anime: torch.Tensor, epoch: int):
         save_image(self._denorm(fake_photo)[:4], os.path.join(
@@ -101,6 +98,7 @@ class CycleGANTrainer(BaseTrainer):
         save_image(self._denorm(fake_anime)[:4], os.path.join(
             self.sample_dir, f"fake_anime_epoch_{epoch:03d}.png"), nrow=2)
 
+    @torch.no_grad()
     def _save_checkpoints(self, epoch: int):
         ckpt_epoch_dir = os.path.join(self.ckpt_dir, f"epoch_{epoch:03d}")
         os.makedirs(ckpt_epoch_dir, exist_ok=True)
@@ -118,9 +116,8 @@ class CycleGANTrainer(BaseTrainer):
         }, os.path.join(ckpt_epoch_dir, "ckpt.pth"))
 
     def train_one_step(self, batch: dict, step: int):
-        device = self.device
-        real_photo = batch["photo_image"].to(device)
-        real_anime = batch["anime_style_image"].to(device)
+        real_photo = batch["photo_image"].to(self.device)
+        real_anime = batch["anime_style_image"].to(self.device)
 
         ######### Generators #########
         self.optimizer_G.zero_grad()

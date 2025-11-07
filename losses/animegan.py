@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from typing import Literal
 from models import VGG16Features, VGG19Features
+from utils.image_processing import rgb_to_gray
 
 
 class AdversarialLoss(nn.Module):
@@ -42,8 +43,8 @@ class GrayscaleStyleLoss(nn.Module):
             self.vgg = VGG19Features()
 
     def forward(self, fake_anime: torch.Tensor, real_anime: torch.Tensor) -> torch.Tensor:
-        fake_anime_gray = self._rgb_to_gray(fake_anime)
-        real_anime_gray = self._rgb_to_gray(real_anime)
+        fake_anime_gray = rgb_to_gray(fake_anime)
+        real_anime_gray = rgb_to_gray(real_anime)
 
         fake_anime_gray_features = self.vgg(fake_anime_gray)
         real_anime_gray_features = self.vgg(real_anime_gray)
@@ -52,15 +53,6 @@ class GrayscaleStyleLoss(nn.Module):
             self._gram_matrix(fake_anime_gray_features),
             self._gram_matrix(real_anime_gray_features)
         )
-
-    def _rgb_to_gray(self, image_rgb: torch.Tensor) -> torch.Tensor:
-        r = image_rgb[:, 0:1, :, :]
-        g = image_rgb[:, 1:2, :, :]
-        b = image_rgb[:, 2:3, :, :]
-
-        gray = 0.299 * r + 0.587 * g + 0.114 * b
-        gray = gray.expand(-1, 3, -1, -1).contiguous()
-        return gray
 
     def _gram_matrix(self, image: torch.Tensor) -> torch.Tensor:
         # https://docs.pytorch.org/tutorials/advanced/neural_style_tutorial.html#style-loss
