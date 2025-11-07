@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
-from losses import AnimeGANAdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
+from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
 from utils.image_processing import rgb_to_gray
 
 class AnimeGANTrainer(BaseTrainer):
@@ -24,7 +24,7 @@ class AnimeGANTrainer(BaseTrainer):
             self.D.load_state_dict(state_dict["D"])
 
         # Loss functions
-        self.criterion_GAN = AnimeGANAdversarialLoss(self.args.lambda_adv)
+        self.criterion_GAN = AdversarialLoss(self.args.lambda_adv)
         self.criterion_content = AnimeGANContentLoss(self.args.lambda_con)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
             self.args.lambda_gra)

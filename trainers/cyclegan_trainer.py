@@ -4,7 +4,7 @@ import torch
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
-from losses import CycleGANAdversarialLoss, CycleGANCycleConsistencyLoss, CycleGANIdentityLoss
+from losses import AdversarialLoss, CycleGANCycleConsistencyLoss, CycleGANIdentityLoss
 from utils.lr_scheduler import LambdaLR
 from utils.replay_buffer import ReplayBuffer
 
@@ -35,7 +35,7 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
-        self.criterion_GAN = CycleGANAdversarialLoss()
+        self.criterion_GAN = AdversarialLoss()
         self.criterion_cycle = CycleGANCycleConsistencyLoss(
             lambda_cyc=self.args.lambda_cyc)
         self.criterion_identity = CycleGANIdentityLoss(

@@ -2,18 +2,8 @@ import torch
 import torch.nn as nn
 
 
-class AdversarialLoss(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.mse = nn.MSELoss()
-
-    def forward(self, pred: torch.Tensor, target_label: float) -> torch.Tensor:
-        target_label = torch.full_like(pred, target_label)
-        return self.mse(pred, target_label)
-
-
 class CycleConsistencyLoss(nn.Module):
-    def __init__(self, lambda_cyc: float = 10.0):
+    def __init__(self, lambda_cyc: float):
         super().__init__()
         self.lambda_cyc = float(lambda_cyc)
         self.l1_loss = nn.L1Loss()
@@ -23,7 +13,7 @@ class CycleConsistencyLoss(nn.Module):
 
 
 class IdentityLoss(nn.Module):
-    def __init__(self, lambda_idt: float = 5.0):
+    def __init__(self, lambda_idt: float):
         super().__init__()
         self.lambda_idt = float(lambda_idt)
         self.l1_loss = nn.L1Loss()

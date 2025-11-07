@@ -5,19 +5,8 @@ from models import VGG16Features, VGG19Features
 from utils.image_processing import rgb_to_gray, rgb_to_yuv, gram_matrix
 
 
-class AdversarialLoss(nn.Module):
-    def __init__(self, lambda_adv: float = 300.0):
-        super().__init__()
-        self.lambda_adv = float(lambda_adv)
-        self.mse = nn.MSELoss()
-
-    def forward(self, pred: torch.Tensor, target_label: float) -> torch.Tensor:
-        target_label = torch.full_like(pred, target_label)
-        return self.lambda_adv * self.mse(pred, target_label)
-
-
 class ContentLoss(nn.Module):
-    def __init__(self, lambda_con: float = 1.5, backbone: Literal["vgg16", "vgg19"] = "vgg16"):
+    def __init__(self, lambda_con: float, backbone: Literal["vgg16", "vgg19"]):
         super().__init__()
         self.lambda_con = float(lambda_con)
         self.l1_loss = nn.L1Loss()
@@ -33,7 +22,7 @@ class ContentLoss(nn.Module):
 
 
 class GrayscaleStyleLoss(nn.Module):
-    def __init__(self, lambda_gra: float = 10.0, backbone: Literal["vgg16", "vgg19"] = "vgg16"):
+    def __init__(self, lambda_gra: float, backbone: Literal["vgg16", "vgg19"]):
         super().__init__()
         self.lambda_gra = float(lambda_gra)
         self.l1_loss = nn.L1Loss()
@@ -56,7 +45,7 @@ class GrayscaleStyleLoss(nn.Module):
 
 
 class ColorReconstructionLoss(nn.Module):
-    def __init__(self, lambda_col: float = 10.0):
+    def __init__(self, lambda_col: float):
         super().__init__()
         self.lambda_col = float(lambda_col)
         self.l1_loss = nn.L1Loss()

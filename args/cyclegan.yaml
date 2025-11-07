@@ -1,0 +1,26 @@
+model: cyclegan
+
+data:
+  photo_root: /data/photo
+  anime_style_root: /data/anime/style
+  image_size: 256
+
+train:
+  num_epochs: 200
+  batch_size: 4
+  num_workers: 1
+  save_every: 10
+  out_dir: output
+  seed: 42
+  resume: false
+  start_epoch: 0
+  ckpt_dir: null
+  decay_epoch: 100
+
+optim:
+  lr: 0.0002
+
+losses:
+  lambda_adv: 1.0
+  lambda_cyc: 10.0
+  lambda_idt: 5.0
