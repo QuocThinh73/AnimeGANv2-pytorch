@@ -15,6 +15,7 @@ class VGG19Features(nn.Module):
         self.features = nn.Sequential(*layers).eval()
         for param in self.features.parameters():
             param.requires_grad = False
+        self.features.to(self.device)
 
         # ImageNet mean and std
         mean = torch.tensor([0.485, 0.456, 0.406]).float()
@@ -42,6 +43,7 @@ class VGG16Features(nn.Module):
         self.features = nn.Sequential(*layers).eval()
         for param in self.features.parameters():
             param.requires_grad = False
+        self.features.to(self.device)
 
         # ImageNet mean and std
         mean = torch.tensor([0.485, 0.456, 0.406]).float()
