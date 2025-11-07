@@ -5,6 +5,7 @@ from argparse import BooleanOptionalAction
 from types import SimpleNamespace
 from copy import deepcopy
 
+
 class ArgsParser:
     def __init__(self, model_choices=("cyclegan", "animegan")):
         self.model_choices = model_choices
@@ -26,9 +27,11 @@ class ArgsParser:
         return args
 
     def _build_cli(self) -> argparse.ArgumentParser:
-        p = argparse.ArgumentParser("Train Anime/Cycle GAN with YAML config + CLI override")
+        p = argparse.ArgumentParser(
+            "Train Anime/Cycle GAN with YAML config + CLI override")
 
-        p.add_argument("--model", type=str, required=True, choices=self.model_choices)
+        p.add_argument("--model", type=str, required=True,
+                       choices=self.model_choices)
         p.add_argument("--args_root", type=str, required=True)
 
         # data
@@ -50,7 +53,7 @@ class ArgsParser:
         p.add_argument("--decay_epoch", type=int, default=None)
 
         # optim
-        p.add_argument("--lr", type=float, default=None) 
+        p.add_argument("--lr", type=float, default=None)
         p.add_argument("--g_lr", type=float, default=None)
         p.add_argument("--d_lr", type=float, default=None)
 
@@ -61,6 +64,7 @@ class ArgsParser:
         p.add_argument("--lambda_con", type=float, default=None)
         p.add_argument("--lambda_gra", type=float, default=None)
         p.add_argument("--lambda_col", type=float, default=None)
+        p.add_argument("--lambda_tv", type=float, default=None)
         p.add_argument("--backbone", type=str, default=None)
 
         return p
@@ -94,21 +98,25 @@ class ArgsParser:
 
         # data
         for key in ["photo_root", "anime_style_root", "anime_smooth_root", "image_size"]:
-            if key in cli: out["data"][key] = cli[key]
+            if key in cli:
+                out["data"][key] = cli[key]
 
         # train
         for key in ["num_epochs", "batch_size", "num_workers", "save_every",
                     "out_dir", "seed", "resume", "start_epoch", "ckpt_dir", "decay_epoch"]:
-            if key in cli: out["train"][key] = cli[key]
+            if key in cli:
+                out["train"][key] = cli[key]
 
         # optim
         for key in ["lr", "g_lr", "d_lr"]:
-            if key in cli: out["optim"][key] = cli[key]
+            if key in cli:
+                out["optim"][key] = cli[key]
 
         # losses
         for key in ["lambda_cyc", "lambda_idt", "lambda_adv",
                     "lambda_con", "lambda_gra", "lambda_col", "backbone"]:
-            if key in cli: out["losses"][key] = cli[key]
+            if key in cli:
+                out["losses"][key] = cli[key]
 
         # model
         if "model" in cli:
@@ -127,7 +135,8 @@ class ArgsParser:
             assert data.get(k), f"Thiếu data.{k} trong config"
 
         if model == "animegan":
-            assert data.get("anime_smooth_root"), "Thiếu data.anime_smooth_root cho AnimeGAN"
+            assert data.get(
+                "anime_smooth_root"), "Thiếu data.anime_smooth_root cho AnimeGAN"
 
         optim = cfg.get("optim", {})
         if model == "cyclegan":
