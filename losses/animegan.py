@@ -10,10 +10,11 @@ class ContentLoss(nn.Module):
         super().__init__()
         self.lambda_con = float(lambda_con)
         self.l1_loss = nn.L1Loss()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if backbone == "vgg16":
-            self.vgg = VGG16Features()
+            self.vgg = VGG16Features().to(self.device)
         elif backbone == "vgg19":
-            self.vgg = VGG19Features()
+            self.vgg = VGG19Features().to(self.device)
 
     def forward(self, fake_anime: torch.Tensor, real_photo: torch.Tensor) -> torch.Tensor:
         fake_anime_features = self.vgg(fake_anime)
@@ -26,10 +27,11 @@ class GrayscaleStyleLoss(nn.Module):
         super().__init__()
         self.lambda_gra = float(lambda_gra)
         self.l1_loss = nn.L1Loss()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         if backbone == "vgg16":
-            self.vgg = VGG16Features()
+            self.vgg = VGG16Features().to(self.device)
         elif backbone == "vgg19":
-            self.vgg = VGG19Features()
+            self.vgg = VGG19Features().to(self.device)
 
     def forward(self, fake_anime: torch.Tensor, real_anime: torch.Tensor) -> torch.Tensor:
         fake_anime_gray = rgb_to_gray(fake_anime)
