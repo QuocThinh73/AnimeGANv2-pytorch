@@ -1,5 +1,7 @@
 import argparse
+import os
 import yaml
+from argparse import BooleanOptionalAction
 from types import SimpleNamespace
 from copy import deepcopy
 
@@ -10,7 +12,8 @@ class ArgsParser:
     def parse(self) -> SimpleNamespace:
         cli = self._build_cli().parse_args()
 
-        cfg = self._load_yaml(cli.config_file)
+        config_path = os.path.join(cli.args_root, f"{cli.model}.yaml")
+        cfg = self._load_yaml(config_path)
 
         cfg["model"] = cli.model
 
@@ -26,7 +29,7 @@ class ArgsParser:
         p = argparse.ArgumentParser("Train Anime/Cycle GAN with YAML config + CLI override")
 
         p.add_argument("--model", type=str, required=True, choices=self.model_choices)
-        p.add_argument("--config_file", type=str, required=True)
+        p.add_argument("--args_root", type=str, required=True)
 
         # data
         p.add_argument("--photo_root", type=str, default=None)
@@ -41,7 +44,7 @@ class ArgsParser:
         p.add_argument("--save_every", type=int, default=None)
         p.add_argument("--out_dir", type=str, default=None)
         p.add_argument("--seed", type=int, default=None)
-        p.add_argument("--resume", action="store_true")
+        p.add_argument("--resume", action=BooleanOptionalAction, default=False)
         p.add_argument("--start_epoch", type=int, default=None)
         p.add_argument("--ckpt_dir", type=str, default=None)
         p.add_argument("--decay_epoch", type=int, default=None)
