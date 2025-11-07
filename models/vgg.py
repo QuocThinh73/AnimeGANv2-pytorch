@@ -24,7 +24,6 @@ class VGG19Features(nn.Module):
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
 
-    @torch.no_grad()
     def _normalize(self, image: torch.Tensor):
         image = (image + 1.0) / 2.0
         return (image - self.mean) / self.std
@@ -51,7 +50,6 @@ class VGG16Features(nn.Module):
     def forward(self, input: torch.Tensor):
         return self.features(self._normalize(input))
 
-    @torch.no_grad()
     def _normalize(self, image: torch.Tensor):
         image = (image + 1.0) / 2.0
         return (image - self.mean) / self.std
