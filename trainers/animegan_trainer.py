@@ -1,6 +1,5 @@
 import os
 import torch
-import torch.nn.functional as F
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
