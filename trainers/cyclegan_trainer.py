@@ -223,7 +223,11 @@ class CycleGANTrainer(BaseTrainer):
         avg_D_photo = self.logger["D_photo"] / n
         avg_D_anime = self.logger["D_anime"] / n
         print(
-            f"[Epoch {epoch}] | G: {avg_G:.3f} | D_photo: {avg_D_photo:.3f} | D_anime: {avg_D_anime:.3f}")
+            f"[Epoch {epoch}] "
+            f"G: {avg_G:.3f} "
+            f"D_photo: {avg_D_photo:.3f} "
+            f"D_anime: {avg_D_anime:.3f}"
+        )
 
         # Reset logger
         self.logger = {"G": 0.0, "D_photo": 0.0, "D_anime": 0.0, "n": 0}

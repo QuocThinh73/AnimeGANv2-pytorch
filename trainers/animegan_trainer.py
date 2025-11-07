@@ -5,7 +5,7 @@ from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
 from losses import AnimeGANAdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
-
+from utils.image_processing import rgb_to_gray
 
 class AnimeGANTrainer(BaseTrainer):
     def __init__(self, args, loader):
@@ -96,15 +96,15 @@ class AnimeGANTrainer(BaseTrainer):
         ######### Generators #########
         self.optimizer_G.zero_grad()
 
-        fake_anime = self.G(real_photo)
-        pred_fake_anime = self.D(fake_anime)
+        fake_anime_style = self.G(real_photo)
+        pred_fake_anime_style = self.D(fake_anime_style)
 
-        loss_adversarial = self.criterion_GAN(pred_fake_anime, 1.0)
-        loss_content = self.criterion_content(fake_anime, real_photo)
+        loss_adversarial = self.criterion_GAN(pred_fake_anime_style, 1.0)
+        loss_content = self.criterion_content(fake_anime_style, real_photo)
         loss_grayscale_style = self.criterion_grayscale_style(
-            fake_anime, real_anime_style)
+            fake_anime_style, real_anime_style)
         loss_color_reconstruction = self.criterion_color_reconstruction(
-            fake_anime, real_photo)
+            fake_anime_style, real_photo)
 
         # Total loss
         loss_G = (
@@ -118,11 +118,74 @@ class AnimeGANTrainer(BaseTrainer):
 
         # Save samples for logging
         with torch.no_grad():
-            self._last_fake_anime = fake_anime.detach().cpu()
+            self._last_fake_anime_style = fake_anime_style.detach().cpu()
 
         ######### Discriminator #########
         self.optimizer_D.zero_grad()
 
+        real_anime_style_gray = rgb_to_gray(real_anime_style)
+        
+        # Logits
+        pred_real_anime_style = self.D(real_anime_style)
+        pred_real_anime_style_gray = self.D(real_anime_style_gray)
+        pred_fake_anime_style = self.D(fake_anime_style.detach())
+        pred_fake_anime_smooth = self.D(real_anime_smooth)
+        
         # Real loss
+        loss_D_real_anime_style = self.criterion_GAN(pred_real_anime_style, 1.0)
+        loss_D_real_anime_style_gray = self.criterion_GAN(pred_real_anime_style_gray, 1.0)
+        
+        # Fake loss
+        loss_D_fake_anime_style = self.criterion_GAN(pred_fake_anime_style, 0.0)
+        loss_D_fake_anime_smooth = self.criterion_GAN(pred_fake_anime_smooth, 0.0)
+        
+        # Total loss
+        loss_D_real = 0.5 * (loss_D_real_anime_style + loss_D_real_anime_style_gray)
+        loss_D_fake = 0.5 * (loss_D_fake_anime_style + loss_D_fake_anime_smooth)
+        loss_D = loss_D_real + loss_D_fake
+        loss_D.backward()
+        
+        self.optimizer_D.step()
+        #########################################################
 
-    def on_epoch_end(self, epoch: int): pass
+        # Logging
+        self.logger["G_total"] += float(loss_G.item())
+        self.logger["D_total"] += float(loss_D.item())
+        self.logger["G_adv"] += float(loss_adversarial.item())
+        self.logger["G_content"] += float(loss_content.item())
+        self.logger["G_gray"] += float(loss_grayscale_style.item())
+        self.logger["G_color"] += float(loss_color_reconstruction.item())
+        self.logger["D_real"] += float(loss_D_real.item())
+        self.logger["D_fake"] += float(loss_D_fake.item())
+        self.logger["n"] += 1
+
+    def on_epoch_end(self, epoch: int):
+        # Logging
+        n = max(self.logger["n"], 1)
+        avg_G_total = self.logger["G_total"] / n
+        avg_D_total = self.logger["D_total"] / n
+        avg_G_adv = self.logger["G_adv"] / n
+        avg_G_content = self.logger["G_content"] / n
+        avg_G_gray = self.logger["G_gray"] / n
+        avg_G_color = self.logger["G_color"] / n
+        avg_D_real = self.logger["D_real"] / n
+        avg_D_fake = self.logger["D_fake"] / n
+        print(f"[Epoch {epoch}] | G_total: {avg_G_total:.3f} | D_total: {avg_D_total:.3f} | G_adv: {avg_G_adv:.3f} | G_content: {avg_G_content:.3f} | G_gray: {avg_G_gray:.3f} | G_color: {avg_G_color:.3f} | D_real: {avg_D_real:.3f} | D_fake: {avg_D_fake:.3f}")
+
+        # Reset logger
+        self.logger = {
+            "G_total": 0.0,
+            "D_total": 0.0,
+            "G_adv": 0.0,
+            "G_content": 0.0,
+            "G_gray": 0.0,
+            "G_color": 0.0,
+            "D_real": 0.0,
+            "D_fake": 0.0,
+            "n": 0,
+        }
+        
+        # Save
+        if epoch % self.args.save_every == 0 and self._last_fake_anime_style is not None:
+            self._save_checkpoints(epoch)
+            self._save_samples(self._last_fake_anime_style, epoch)
