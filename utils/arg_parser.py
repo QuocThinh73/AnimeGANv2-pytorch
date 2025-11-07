@@ -114,7 +114,7 @@ class ArgsParser:
 
         # losses
         for key in ["lambda_cyc", "lambda_idt", "lambda_adv",
-                    "lambda_con", "lambda_gra", "lambda_col", "backbone"]:
+                    "lambda_con", "lambda_gra", "lambda_col", "lambda_tv", "backbone"]:
             if key in cli:
                 out["losses"][key] = cli[key]
 
@@ -180,6 +180,7 @@ class ArgsParser:
         flat["lambda_con"] = losses.get("lambda_con")
         flat["lambda_gra"] = losses.get("lambda_gra")
         flat["lambda_col"] = losses.get("lambda_col")
+        flat["lambda_tv"] = losses.get("lambda_tv")
         flat["backbone"] = losses.get("backbone")
 
         return SimpleNamespace(**flat)

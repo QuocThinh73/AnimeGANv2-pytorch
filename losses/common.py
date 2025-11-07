@@ -21,5 +21,7 @@ class TotalVariationLoss(nn.Module):
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         dx = image[:, :, 1:, :] - image[:, :, :-1, :]
         dy = image[:, :, :, 1:] - image[:, :, :, :-1]
+        dx = dx[:, :, :, :-1]
+        dy = dy[:, :, :-1, :]
         tv = torch.sqrt(dx.pow(2) + dy.pow(2) + 1e-6).mean()
         return self.lambda_tv * tv
