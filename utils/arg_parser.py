@@ -26,7 +26,7 @@ class ArgsParser:
         p = argparse.ArgumentParser("Train Anime/Cycle GAN with YAML config + CLI override")
 
         p.add_argument("--model", type=str, required=True, choices=self.model_choices)
-        p.add_argument("--config-file", type=str, required=True)
+        p.add_argument("--config_file", type=str, required=True)
 
         # data
         p.add_argument("--photo_root", type=str, default=None)
