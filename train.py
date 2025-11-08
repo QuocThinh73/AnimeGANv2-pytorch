@@ -1,5 +1,7 @@
 # train.py
 import torch
+import torch_xla.core.xla_model as xm
+import torch_xla.distributed.parallel_loader as pl
 from trainers import build_trainer
 from datasets import Photo2AnimeDataset
 from torch.utils.data import DataLoader
@@ -9,7 +11,8 @@ def main():
     args = ArgsParser().parse()
 
     torch.manual_seed(args.seed)
-    torch.backends.cudnn.benchmark = True
+    # Không cần cudnn cho TPU
+    # torch.backends.cudnn.benchmark = True
 
     dataset = Photo2AnimeDataset(
         model=args.model,
@@ -24,9 +27,13 @@ def main():
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        pin_memory=True,
+        pin_memory=False,  # TPU không hỗ trợ pin_memory
         drop_last=True
     )
+    
+    # Tạo parallel loader cho TPU
+    device = xm.xla_device()
+    loader = pl.MpDeviceLoader(loader, device)
 
     trainer = build_trainer(args, loader)
     trainer.run()

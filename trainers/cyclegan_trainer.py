@@ -1,6 +1,7 @@
 import os
 import itertools
 import torch
+import torch_xla.core.xla_model as xm
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import CycleGANGenerator, CycleGANDiscriminator
@@ -35,7 +36,7 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss()
+        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
         self.criterion_cycle = CycleGANCycleConsistencyLoss(
             lambda_cyc=self.args.lambda_cyc)
         self.criterion_identity = CycleGANIdentityLoss(
@@ -155,7 +156,9 @@ class CycleGANTrainer(BaseTrainer):
         )
         loss_G.backward()
 
-        self.optimizer_G.step()
+        # Sử dụng TPU optimizer step
+        xm.optimizer_step(self.optimizer_G)
+        xm.mark_step()
         #########################################################
 
         # Save samples for logging
@@ -180,7 +183,9 @@ class CycleGANTrainer(BaseTrainer):
         loss_D_photo = 0.5 * (loss_D_photo_real + loss_D_photo_fake)
         loss_D_photo.backward()
 
-        self.optimizer_D_photo.step()
+        # Sử dụng TPU optimizer step
+        xm.optimizer_step(self.optimizer_D_photo)
+        xm.mark_step()
 
         #########################################################
 
@@ -201,7 +206,9 @@ class CycleGANTrainer(BaseTrainer):
         loss_D_anime = 0.5 * (loss_D_anime_real + loss_D_anime_fake)
         loss_D_anime.backward()
 
-        self.optimizer_D_anime.step()
+        # Sử dụng TPU optimizer step
+        xm.optimizer_step(self.optimizer_D_anime)
+        xm.mark_step()
 
         #########################################################
 

@@ -1,17 +1,17 @@
 import os
 import torch
+import torch_xla.core.xla_model as xm
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
 from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
 from utils.image_processing import rgb_to_gray
-import torch_xla.core.xla_model as xm
+
 
 class AnimeGANTrainer(BaseTrainer):
     def __init__(self, args, loader):
         super().__init__(args, loader)
         self.stage = "pretrain" if args.resume else "train"
-        self.device = xm.xla_device()
 
     def build_models(self):
         # Networks
@@ -26,12 +26,13 @@ class AnimeGANTrainer(BaseTrainer):
             self.D.load_state_dict(state_dict["D"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss(self.args.lambda_adv)
-        self.criterion_content = AnimeGANContentLoss(self.args.lambda_con, self.args.backbone).to(self.device)
+        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
+        self.criterion_content = AnimeGANContentLoss(
+            lambda_con=self.args.lambda_con, backbone=self.args.backbone)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
-            self.args.lambda_gra, self.args.backbone).to(self.device)
+            lambda_gra=self.args.lambda_gra, backbone=self.args.backbone)
         self.criterion_color_reconstruction = AnimeGANColorReconstructionLoss(
-            self.args.lambda_col).to(self.device)
+            lambda_col=self.args.lambda_col)
 
         # Output directories
         self.sample_dir = os.path.join(
@@ -114,7 +115,9 @@ class AnimeGANTrainer(BaseTrainer):
         )
         loss_G.backward()
 
-        xm.optimizer_step(self.optimizer_G, barrier=True) # self.optimizer_G.step()
+        # Sử dụng TPU optimizer step
+        xm.optimizer_step(self.optimizer_G)
+        xm.mark_step()
         #########################################################
 
         # Save samples for logging
@@ -124,29 +127,37 @@ class AnimeGANTrainer(BaseTrainer):
         ######### Discriminator #########
         self.optimizer_D.zero_grad()
 
-        real_anime_style_gray = rgb_to_gray(real_anime_style).to(self.device) # Edit for TPU
-        
+        real_anime_style_gray = rgb_to_gray(real_anime_style)
+
         # Logits
         pred_real_anime_style = self.D(real_anime_style)
         pred_real_anime_style_gray = self.D(real_anime_style_gray)
         pred_fake_anime_style = self.D(fake_anime_style.detach())
         pred_fake_anime_smooth = self.D(real_anime_smooth)
-        
+
         # Real loss
-        loss_D_real_anime_style = self.criterion_GAN(pred_real_anime_style, 1.0)
-        loss_D_real_anime_style_gray = self.criterion_GAN(pred_real_anime_style_gray, 1.0)
-        
+        loss_D_real_anime_style = self.criterion_GAN(
+            pred_real_anime_style, 1.0)
+        loss_D_real_anime_style_gray = self.criterion_GAN(
+            pred_real_anime_style_gray, 1.0)
+
         # Fake loss
-        loss_D_fake_anime_style = self.criterion_GAN(pred_fake_anime_style, 0.0)
-        loss_D_fake_anime_smooth = self.criterion_GAN(pred_fake_anime_smooth, 0.0)
-        
+        loss_D_fake_anime_style = self.criterion_GAN(
+            pred_fake_anime_style, 0.0)
+        loss_D_fake_anime_smooth = self.criterion_GAN(
+            pred_fake_anime_smooth, 0.0)
+
         # Total loss
-        loss_D_real = 0.5 * (loss_D_real_anime_style + loss_D_real_anime_style_gray)
-        loss_D_fake = 0.5 * (loss_D_fake_anime_style + loss_D_fake_anime_smooth)
+        loss_D_real = 0.5 * (loss_D_real_anime_style +
+                             loss_D_real_anime_style_gray)
+        loss_D_fake = 0.5 * (loss_D_fake_anime_style +
+                             loss_D_fake_anime_smooth)
         loss_D = loss_D_real + loss_D_fake
         loss_D.backward()
-        
-        xm.optimizer_step(self.optimizer_D, barrier=True) # self.optimizer_D.step()
+
+        # Sử dụng TPU optimizer step
+        xm.optimizer_step(self.optimizer_D)
+        xm.mark_step()
         #########################################################
 
         # Logging
@@ -185,7 +196,7 @@ class AnimeGANTrainer(BaseTrainer):
             "D_fake": 0.0,
             "n": 0,
         }
-        
+
         # Save
         if epoch % self.args.save_every == 0 and self._last_fake_anime_style is not None:
             self._save_checkpoints(epoch)
