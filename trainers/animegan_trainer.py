@@ -15,8 +15,8 @@ class AnimeGANTrainer(BaseTrainer):
 
     def build_models(self):
         # Networks
-        self.G = AnimeGANGenerator().to(self.device)
-        self.D = AnimeGANDiscriminator().to(self.device)
+        self.G = AnimeGANGenerator()
+        self.D = AnimeGANDiscriminator()
 
         # Load checkpoints
         if self.args.resume:
@@ -27,8 +27,9 @@ class AnimeGANTrainer(BaseTrainer):
                 state_dict = torch.load(ckpt_path, map_location="cpu")
             self.G.load_state_dict(state_dict["G"])
             self.D.load_state_dict(state_dict["D"])
-            self.G.to(self.device)
-            self.D.to(self.device)
+        
+        self.G.to(self.device)
+        self.D.to(self.device)
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
@@ -72,9 +73,18 @@ class AnimeGANTrainer(BaseTrainer):
         # Load checkpoints
         if self.args.resume:
             ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            try:
+                state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+            except TypeError:
+                state_dict = torch.load(ckpt_path, map_location="cpu")
             self.optimizer_G.load_state_dict(state_dict["opt_G"])
             self.optimizer_D.load_state_dict(state_dict["opt_D"])
+
+            for opt in [self.optimizer_G, self.optimizer_D]:
+                for st in opt.state.values():
+                    for k, v in list(st.items()):
+                        if isinstance(v, torch.Tensor):
+                            st[k] = v.to(self.device)
 
     @torch.no_grad()
     def _save_samples(self, fake_anime: torch.Tensor, epoch: int):
