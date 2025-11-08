@@ -10,7 +10,7 @@ class BaseTrainer(ABC):
         self.args = args
         self.loader = loader
         # Sử dụng TPU device (cách mới để tránh deprecation warning)
-        self.device = torch_xla.device()
+        self.device = xm.xla_device()
 
     @abstractmethod
     def build_models(self): pass
