@@ -6,14 +6,16 @@ from utils.image_processing import rgb_to_gray, rgb_to_yuv, gram_matrix
 
 
 class ContentLoss(nn.Module):
-    def __init__(self, lambda_con: float, backbone: Literal["vgg16", "vgg19"]):
+    def __init__(self, lambda_con: float, backbone: Literal["vgg16", "vgg19"], device=None):
         super().__init__()
         self.lambda_con = float(lambda_con)
         self.l1_loss = nn.L1Loss()
         if backbone == "vgg16":
-            self.vgg = VGG16Features().to()
+            self.vgg = VGG16Features()
         elif backbone == "vgg19":
-            self.vgg = VGG19Features().to()
+            self.vgg = VGG19Features()
+        if device is not None:
+            self.vgg = self.vgg.to(device)
 
     def forward(self, fake_anime: torch.Tensor, real_photo: torch.Tensor) -> torch.Tensor:
         fake_anime_features = self.vgg(fake_anime)
@@ -22,14 +24,16 @@ class ContentLoss(nn.Module):
 
 
 class GrayscaleStyleLoss(nn.Module):
-    def __init__(self, lambda_gra: float, backbone: Literal["vgg16", "vgg19"]):
+    def __init__(self, lambda_gra: float, backbone: Literal["vgg16", "vgg19"], device=None):
         super().__init__()
         self.lambda_gra = float(lambda_gra)
         self.l1_loss = nn.L1Loss()
         if backbone == "vgg16":
-            self.vgg = VGG16Features().to()
+            self.vgg = VGG16Features()
         elif backbone == "vgg19":
-            self.vgg = VGG19Features().to()
+            self.vgg = VGG19Features()
+        if device is not None:
+            self.vgg = self.vgg.to(device)
 
     def forward(self, fake_anime: torch.Tensor, real_anime: torch.Tensor) -> torch.Tensor:
         fake_anime_gray = rgb_to_gray(fake_anime)

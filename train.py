@@ -32,7 +32,9 @@ def main():
     )
     
     # Tạo parallel loader cho TPU
-    device = xm.xla_device()
+    # Sử dụng cách mới để tránh deprecation warning
+    import torch_xla
+    device = torch_xla.device()
     loader = pl.MpDeviceLoader(loader, device)
 
     trainer = build_trainer(args, loader)

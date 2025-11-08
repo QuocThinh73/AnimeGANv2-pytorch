@@ -1,5 +1,6 @@
 import torch
 import torch_xla.core.xla_model as xm
+import torch_xla
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 
@@ -8,8 +9,8 @@ class BaseTrainer(ABC):
     def __init__(self, args, loader):
         self.args = args
         self.loader = loader
-        # Sử dụng TPU device
-        self.device = xm.xla_device()
+        # Sử dụng TPU device (cách mới để tránh deprecation warning)
+        self.device = torch_xla.device()
 
     @abstractmethod
     def build_models(self): pass

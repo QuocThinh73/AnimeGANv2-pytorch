@@ -28,9 +28,9 @@ class AnimeGANTrainer(BaseTrainer):
         # Loss functions
         self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
         self.criterion_content = AnimeGANContentLoss(
-            lambda_con=self.args.lambda_con, backbone=self.args.backbone)
+            lambda_con=self.args.lambda_con, backbone=self.args.backbone, device=self.device)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
-            lambda_gra=self.args.lambda_gra, backbone=self.args.backbone)
+            lambda_gra=self.args.lambda_gra, backbone=self.args.backbone, device=self.device)
         self.criterion_color_reconstruction = AnimeGANColorReconstructionLoss(
             lambda_col=self.args.lambda_col)
 
