@@ -184,15 +184,15 @@ class AnimeGANTrainer(BaseTrainer):
         avg_G_tv = self.logger["G_tv"] / n
         avg_D_real = self.logger["D_real"] / n
         avg_D_fake = self.logger["D_fake"] / n
-        print(f"[Epoch {epoch}] "
-              f"G_total: {avg_G_total:.5f} "
-              f"D_total: {avg_D_total:.5f} "
-              f"G_adv: {avg_G_adv:.5f} "
-              f"G_content: {avg_G_content:.5f} "
-              f"G_gray: {avg_G_gray:.5f} "
-              f"G_color: {avg_G_color:.5f} "
-              f"G_tv: {avg_G_tv:.5f} "
-              f"D_real: {avg_D_real:.5f} "
+        print(f"[Epoch {epoch}] | "
+              f"G_total: {avg_G_total:.5f} | "
+              f"D_total: {avg_D_total:.5f} |"
+              f"G_adv: {avg_G_adv:.5f} |"
+              f"G_content: {avg_G_content:.5f} |"
+              f"G_gray: {avg_G_gray:.5f} |"
+              f"G_color: {avg_G_color:.5f} |"
+              f"G_tv: {avg_G_tv:.5f} |"
+              f"D_real: {avg_D_real:.5f} |"
               f"D_fake: {avg_D_fake:.5f}")
 
         # Reset logger
