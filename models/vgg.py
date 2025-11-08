@@ -6,7 +6,7 @@ import torchvision.models as models
 class VGG19Features(nn.Module):
     def __init__(self, last_layer: int = 26):
         super().__init__()
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # VGG19 features
         vgg = models.vgg19(weights=models.VGG19_Weights.IMAGENET1K_V1)
@@ -30,11 +30,18 @@ class VGG19Features(nn.Module):
         image = (image + 1.0) / 2.0
         return (image - self.mean) / self.std
 
+    def to(self, device):
+        """For TPU"""
+        self.mean = self.mean.to(device)
+        self.std = self.std.to(device)
+        self.features = self.features.to(device)
+        return super().to(device)
+
 
 class VGG16Features(nn.Module):
     def __init__(self, last_layer: int = 22):
         super().__init__()
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # VGG16 features
         vgg = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
@@ -57,3 +64,10 @@ class VGG16Features(nn.Module):
     def _normalize(self, image: torch.Tensor):
         image = (image + 1.0) / 2.0
         return (image - self.mean) / self.std
+
+    def to(self, device):
+        """For TPU"""
+        self.mean = self.mean.to(device)
+        self.std = self.std.to(device)
+        self.features = self.features.to(device)
+        return super().to(device)
