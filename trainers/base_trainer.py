@@ -26,16 +26,11 @@ class BaseTrainer(ABC):
     @abstractmethod
     def on_epoch_end(self, epoch): pass
 
-    def _wrap_loader_if_tpu(self):
-        """For TPU"""
-        if isinstance(self.device, torch_xla.device.XLADevice):
-            self.loader = MpDeviceLoader(self.loader, self.device)
-
     def run(self):
         self.build_models()
         self.build_optim()
 
-        self._wrap_loader_if_tpu() # For TPU
+        self.loader = MpDeviceLoader(self.loader, self.device) # For TPU
         
         step = 0
         first_epoch = self.args.start_epoch + 1 if self.args.resume else 1
@@ -46,8 +41,7 @@ class BaseTrainer(ABC):
                 step += 1
                 self.train_one_step(batch, step)
 
-            if isinstance(self.device, torch_xla.device.XLADevice): # For TPU
-                xm.mark_step()
+            xm.mark_step()
                               
             self.on_epoch_end(epoch)
 
