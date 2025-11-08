@@ -121,7 +121,7 @@ class AnimeGANTrainer(BaseTrainer):
         )
         loss_G.backward()
 
-        self.optimizer_G.step()
+        xm.optimizer_step(self.optimizer_G) # self.optimizer_G.step()
         #########################################################
 
         # Save samples for logging
@@ -159,7 +159,7 @@ class AnimeGANTrainer(BaseTrainer):
         loss_D = loss_D_real + loss_D_fake
         loss_D.backward()
 
-        self.optimizer_D.step()
+        xm.optimizer_step(self.optimizer_D) # self.optimizer_D.step()
         #########################################################
 
         # Logging
