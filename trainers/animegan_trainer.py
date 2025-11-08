@@ -27,11 +27,11 @@ class AnimeGANTrainer(BaseTrainer):
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss(self.args.lambda_adv)
-        self.criterion_content = AnimeGANContentLoss(self.args.lambda_con, self.args.backbone)
+        self.criterion_content = AnimeGANContentLoss(self.args.lambda_con, self.args.backbone).to(self.device)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
-            self.args.lambda_gra, self.args.backbone)
+            self.args.lambda_gra, self.args.backbone).to(self.device)
         self.criterion_color_reconstruction = AnimeGANColorReconstructionLoss(
-            self.args.lambda_col)
+            self.args.lambda_col).to(self.device)
 
         # Output directories
         self.sample_dir = os.path.join(
@@ -124,7 +124,7 @@ class AnimeGANTrainer(BaseTrainer):
         ######### Discriminator #########
         self.optimizer_D.zero_grad()
 
-        real_anime_style_gray = rgb_to_gray(real_anime_style)
+        real_anime_style_gray = rgb_to_gray(real_anime_style).to(self.device) # Edit for TPU
         
         # Logits
         pred_real_anime_style = self.D(real_anime_style)
