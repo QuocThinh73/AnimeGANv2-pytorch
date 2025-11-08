@@ -12,10 +12,7 @@ class BaseTrainer(ABC):
     def __init__(self, args, loader):
         self.args = args
         self.loader = loader
-        if args.device == "tpu":
-            self.device = xm.xla_device()
-        else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = xm.xla_device()
 
     @abstractmethod
     def build_models(self): pass
