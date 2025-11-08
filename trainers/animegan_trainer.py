@@ -5,11 +5,13 @@ from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
 from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
 from utils.image_processing import rgb_to_gray
+import torch_xla.core.xla_model as xm
 
 class AnimeGANTrainer(BaseTrainer):
     def __init__(self, args, loader):
         super().__init__(args, loader)
         self.stage = "pretrain" if args.resume else "train"
+        self.device = xm.xla_device()
 
     def build_models(self):
         # Networks
@@ -112,7 +114,7 @@ class AnimeGANTrainer(BaseTrainer):
         )
         loss_G.backward()
 
-        self.optimizer_G.step()
+        xm.optimizer_step(self.optimizer_G, barrier=True) # self.optimizer_G.step()
         #########################################################
 
         # Save samples for logging
@@ -144,7 +146,7 @@ class AnimeGANTrainer(BaseTrainer):
         loss_D = loss_D_real + loss_D_fake
         loss_D.backward()
         
-        self.optimizer_D.step()
+        xm.optimizer_step(self.optimizer_D, barrier=True) # self.optimizer_D.step()
         #########################################################
 
         # Logging
