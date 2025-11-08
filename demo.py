@@ -1,6 +1,7 @@
 import streamlit as st
 import io
 import os
+import pickle
 
 # Try to import PyTorch and related libraries
 try:
@@ -16,6 +17,52 @@ except OSError as e:
     TORCH_AVAILABLE = False
     TORCH_ERROR = str(e)
 
+# Helper function to load checkpoint with compatibility fixes
+def load_checkpoint_compatible(checkpoint_path, device='cpu'):
+    """
+    Load checkpoint with multiple compatibility methods to handle
+    PyTorch version mismatches, especially the _rebuild_device_tensor_from_cpu_tensor error.
+    """
+    # Fix: Monkey patch _rebuild_device_tensor_from_cpu_tensor if it doesn't exist
+    # This handles the case where checkpoint was saved with newer PyTorch but loaded with older
+    if not hasattr(torch._utils, '_rebuild_device_tensor_from_cpu_tensor'):
+        def _rebuild_device_tensor_from_cpu_tensor(storage, device_str):
+            """Fallback for missing _rebuild_device_tensor_from_cpu_tensor"""
+            # Try to use _rebuild_tensor as fallback
+            if hasattr(torch._utils, '_rebuild_tensor'):
+                # Convert device string to device object
+                device_obj = torch.device(device_str) if isinstance(device_str, str) else device_str
+                return torch._utils._rebuild_tensor(storage, device_obj)
+            else:
+                # Last resort: return storage as tensor
+                return storage
+        torch._utils._rebuild_device_tensor_from_cpu_tensor = _rebuild_device_tensor_from_cpu_tensor
+    
+    # Method 1: Standard load with weights_only=False (PyTorch 2.0+)
+    try:
+        return torch.load(checkpoint_path, map_location=device, weights_only=False)
+    except (AttributeError, RuntimeError, pickle.UnpicklingError, TypeError) as e:
+        pass
+    
+    # Method 2: Load without weights_only (older PyTorch or compatibility)
+    try:
+        return torch.load(checkpoint_path, map_location=device)
+    except (AttributeError, RuntimeError, pickle.UnpicklingError, TypeError) as e:
+        pass
+    
+    # Method 3: Try loading with pickle_module explicitly
+    try:
+        return torch.load(checkpoint_path, map_location=device, pickle_module=pickle)
+    except Exception as e:
+        pass
+    
+    # If all methods fail, raise error with helpful message
+    raise RuntimeError(
+        f"Không thể load checkpoint từ {checkpoint_path}. "
+        "Lỗi có thể do không tương thích phiên bản PyTorch. "
+        "Thử cài đặt lại PyTorch với phiên bản tương thích hoặc train lại model."
+    )
+
 # Page config
 st.set_page_config(
     page_title="AnimeGANv2 Demo",
@@ -25,66 +72,97 @@ st.set_page_config(
 
 # Title
 st.title("🎨 AnimeGANv2 - Chuyển ảnh thành Anime")
-
-st.markdown("Upload checkpoint G.pth và ảnh để tạo ảnh anime style!")
+st.markdown("Chọn checkpoint và upload ảnh để tạo ảnh anime style!")
 
 # Initialize session state
 if 'model' not in st.session_state:
     st.session_state.model = None
 if 'device' not in st.session_state:
     st.session_state.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if 'selected_epoch' not in st.session_state:
+    st.session_state.selected_epoch = None
+
+# Function to scan available checkpoints
+def scan_checkpoints():
+    """Scan for available checkpoints in output/animegan/checkpoints/"""
+    checkpoints_dir = "output/animegan/checkpoints"
+    available_epochs = []
+    
+    if os.path.exists(checkpoints_dir):
+        # Get all epoch directories
+        for item in os.listdir(checkpoints_dir):
+            epoch_dir = os.path.join(checkpoints_dir, item)
+            if os.path.isdir(epoch_dir) and item.startswith("epoch_"):
+                g_path = os.path.join(epoch_dir, "G.pth")
+                if os.path.exists(g_path):
+                    # Extract epoch number
+                    try:
+                        epoch_num = int(item.replace("epoch_", ""))
+                        available_epochs.append({
+                            'epoch': epoch_num,
+                            'name': item,
+                            'path': g_path
+                        })
+                    except ValueError:
+                        continue
+    
+    # Sort by epoch number
+    available_epochs.sort(key=lambda x: x['epoch'], reverse=True)
+    return available_epochs
 
 # Sidebar for model loading
 with st.sidebar:
     st.header("⚙️ Cài đặt Model")
     
-    # Option 1: Upload checkpoint file
-    st.subheader("1. Upload Checkpoint")
-    uploaded_checkpoint = st.file_uploader(
-        "Chọn file G.pth",
-        type=['pth'],
-        help="Upload file checkpoint của Generator (G.pth)"
-    )
+    # Scan for available checkpoints
+    available_checkpoints = scan_checkpoints()
     
-    # Option 2: Use default checkpoint
-    st.subheader("2. Hoặc sử dụng checkpoint mặc định")
-    default_checkpoint_path = "output/G.pth"
-    use_default = st.checkbox("Sử dụng checkpoint mặc định (output/G.pth)", value=False)
-    
-    # Load model button
-    load_model = st.button("🔄 Load Model", type="primary")
-    
-    if load_model:
-        checkpoint_path = None
+    if not available_checkpoints:
+        st.error("❌ Không tìm thấy checkpoint nào!")
+        st.info("Vui lòng đảm bảo có checkpoint trong `output/animegan/checkpoints/epoch_xxx/`")
+    else:
+        st.success(f"✅ Tìm thấy {len(available_checkpoints)} checkpoint(s)")
         
-        if use_default and os.path.exists(default_checkpoint_path):
-            checkpoint_path = default_checkpoint_path
-            st.success(f"Đang sử dụng checkpoint mặc định: {default_checkpoint_path}")
-        elif uploaded_checkpoint is not None:
-            # Save uploaded file temporarily
-            with open("temp_G.pth", "wb") as f:
-                f.write(uploaded_checkpoint.getbuffer())
-            checkpoint_path = "temp_G.pth"
-            st.success("Đã upload checkpoint!")
-        else:
-            st.error("Vui lòng upload checkpoint hoặc chọn sử dụng checkpoint mặc định!")
-            checkpoint_path = None
+        # Create list of epoch names for selectbox
+        epoch_options = [f"Epoch {cp['epoch']:03d}" for cp in available_checkpoints]
         
-        if checkpoint_path:
+        # Selectbox for choosing epoch
+        selected_index = st.selectbox(
+            "Chọn checkpoint:",
+            options=range(len(epoch_options)),
+            format_func=lambda x: epoch_options[x],
+            help="Chọn epoch checkpoint bạn muốn sử dụng"
+        )
+        
+        selected_checkpoint = available_checkpoints[selected_index]
+        st.info(f"📁 Đường dẫn: `{selected_checkpoint['path']}`")
+        
+        # Load model button
+        load_model = st.button("🔄 Load Model", type="primary")
+        
+        if load_model:
+            checkpoint_path = selected_checkpoint['path']
             try:
                 with st.spinner("Đang load model..."):
                     # Initialize model
                     model = AnimeGANGenerator().to(st.session_state.device)
                     
-                    # Load checkpoint
-                    state_dict = torch.load(checkpoint_path, map_location=st.session_state.device)
+                    # Load checkpoint with compatibility handling
+                    # Use helper function that tries multiple methods
+                    state_dict = load_checkpoint_compatible(checkpoint_path, device='cpu')
+                    
+                    # Load state dict to model
                     model.load_state_dict(state_dict)
+                    
+                    # Move model to target device after loading
+                    model = model.to(st.session_state.device)
                     model.eval()
                     
                     # Save to session state
                     st.session_state.model = model
+                    st.session_state.selected_epoch = selected_checkpoint['epoch']
                     
-                    st.success("✅ Model đã được load thành công!")
+                    st.success(f"✅ Model đã được load thành công! (Epoch {selected_checkpoint['epoch']:03d})")
                     
                     # Show device info
                     device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
@@ -92,10 +170,18 @@ with st.sidebar:
                     
             except Exception as e:
                 st.error(f"Lỗi khi load model: {str(e)}")
-    
-    # Clean up temp file
-    if uploaded_checkpoint and os.path.exists("temp_G.pth"):
-        pass  # Keep it for now, will be cleaned up later
+                st.exception(e)
+                st.markdown("""
+                **Gợi ý khắc phục:**
+                - Lỗi này thường do không tương thích phiên bản PyTorch
+                - Thử cài đặt lại PyTorch với phiên bản tương thích
+                - Hoặc train lại model với phiên bản PyTorch hiện tại
+                """)
+        
+        # Show current loaded model info
+        if st.session_state.model is not None and st.session_state.selected_epoch is not None:
+            st.markdown("---")
+            st.success(f"✅ Model hiện tại: Epoch {st.session_state.selected_epoch:03d}")
 
 # Main content area
 col1, col2 = st.columns(2)
@@ -175,9 +261,10 @@ with col2:
 st.markdown("---")
 st.markdown("### 📝 Hướng dẫn sử dụng:")
 st.markdown("""
-1. **Load Model**: 
-   - Upload file G.pth ở sidebar hoặc chọn sử dụng checkpoint mặc định
+1. **Chọn và Load Model**: 
+   - Ở sidebar, chọn checkpoint từ danh sách các epoch có sẵn
    - Click nút "Load Model" để load model vào memory
+   - Checkpoint được tự động quét từ `output/animegan/checkpoints/epoch_xxx/`
 
 2. **Upload Ảnh**: 
    - Chọn ảnh bạn muốn chuyển đổi (PNG, JPG, JPEG)
@@ -191,12 +278,6 @@ st.markdown("""
 - Model sẽ được resize ảnh về 256x256 pixels
 - Sử dụng GPU sẽ nhanh hơn CPU
 - Model chỉ cần load 1 lần, có thể dùng cho nhiều ảnh
+- Checkpoint được sắp xếp theo epoch (mới nhất ở trên)
 """)
-
-# Cleanup temp file on app restart
-if os.path.exists("temp_G.pth"):
-    try:
-        os.remove("temp_G.pth")
-    except:
-        pass
 
