@@ -1,6 +1,10 @@
 import torch
 from tqdm import tqdm
 from abc import ABC, abstractmethod
+# TPU import
+import torch_xla
+import torch_xla.core.xla_model as xm
+from torch_xla.distributed.parallel_loader import MpDeviceLoader
 
 
 class BaseTrainer(ABC):
@@ -24,9 +28,16 @@ class BaseTrainer(ABC):
     @abstractmethod
     def on_epoch_end(self, epoch): pass
 
+    def _wrap_loader_if_tpu(self):
+        """Add for TPU"""
+        if isinstance(self.device, torch_xla.device.XLADevice):
+            self.loader = MpDeviceLoader(self.loader, self.device)
+
     def run(self):
         self.build_models()
         self.build_optim()
+        
+        self._wrap_loader_if_tpu() # Add for TPU
         
         step = 0
         first_epoch = self.args.start_epoch + 1 if self.args.resume else 1
@@ -36,6 +47,9 @@ class BaseTrainer(ABC):
             for batch in self.loader:
                 step += 1
                 self.train_one_step(batch, step)
+
+            if isinstance(self.device, torch_xla.device.XLADevice): # Add for TPU
+                xm.mark_step()
                             
             self.on_epoch_end(epoch)
 
