@@ -21,9 +21,14 @@ class AnimeGANTrainer(BaseTrainer):
         # Load checkpoints
         if self.args.resume:
             ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            try:
+                state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+            except TypeError:
+                state_dict = torch.load(ckpt_path, map_location="cpu")
             self.G.load_state_dict(state_dict["G"])
             self.D.load_state_dict(state_dict["D"])
+            self.G.to(self.device)
+            self.D.to(self.device)
 
         # Loss functions
         self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
