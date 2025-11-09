@@ -67,10 +67,6 @@ class ArgsParser:
         p.add_argument("--lambda_tv", type=float, default=None)
         p.add_argument("--backbone", type=str, default=None)
 
-        # io
-        p.add_argument("--args_root", type=str, default=None)
-        p.add_argument("--out_dir", type=str, default=None)
-
         return p
 
     @staticmethod
@@ -98,7 +94,7 @@ class ArgsParser:
 
     @staticmethod
     def _flatten_overrides(cli: dict) -> dict:
-        out = {"data": {}, "train": {}, "optim": {}, "losses": {}, "io": {}}
+        out = {"data": {}, "train": {}, "optim": {}, "losses": {}}
 
         # data
         for key in ["photo_root", "anime_style_root", "anime_smooth_root", "image_size"]:
@@ -121,11 +117,6 @@ class ArgsParser:
                     "lambda_con", "lambda_gra", "lambda_col", "lambda_tv", "backbone"]:
             if key in cli:
                 out["losses"][key] = cli[key]
-
-        # io
-        for key in ["args_root", "out_dir"]:
-            if key in cli:
-                out["io"][key] = cli[key]
 
         # model
         if "model" in cli:
