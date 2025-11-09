@@ -46,9 +46,9 @@ class CycleGANTrainer(BaseTrainer):
 
         # Output directories
         self.sample_dir = os.path.join(
-            self.args.out_dir, "cyclegan", "samples")
+            self.args.out_dir, "samples")
         self.ckpt_dir = os.path.join(
-            self.args.out_dir, "cyclegan", "checkpoints")
+            self.args.out_dir, "checkpoints")
         os.makedirs(self.sample_dir, exist_ok=True)
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
@@ -70,11 +70,11 @@ class CycleGANTrainer(BaseTrainer):
     def build_optim(self):
         # Optimizers
         self.optimizer_G = torch.optim.Adam(itertools.chain(
-            self.G_photo2anime.parameters(), self.G_anime2photo.parameters()), lr=self.args.lr, betas=(0.5, 0.999))
+            self.G_photo2anime.parameters(), self.G_anime2photo.parameters()), lr=self.args.g_lr, betas=(0.5, 0.999))
         self.optimizer_D_photo = torch.optim.Adam(
-            self.D_photo.parameters(), lr=self.args.lr, betas=(0.5, 0.999))
+            self.D_photo.parameters(), lr=self.args.d_lr, betas=(0.5, 0.999))
         self.optimizer_D_anime = torch.optim.Adam(
-            self.D_anime.parameters(), lr=self.args.lr, betas=(0.5, 0.999))
+            self.D_anime.parameters(), lr=self.args.d_lr, betas=(0.5, 0.999))
 
         # Load checkpoints
         if self.args.resume:

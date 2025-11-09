@@ -53,7 +53,6 @@ class ArgsParser:
         p.add_argument("--decay_epoch", type=int, default=None)
 
         # optim
-        p.add_argument("--lr", type=float, default=None)
         p.add_argument("--g_lr", type=float, default=None)
         p.add_argument("--d_lr", type=float, default=None)
 
@@ -110,7 +109,7 @@ class ArgsParser:
                 out["train"][key] = cli[key]
 
         # optim
-        for key in ["lr", "g_lr", "d_lr"]:
+        for key in ["g_lr", "d_lr"]:
             if key in cli:
                 out["optim"][key] = cli[key]
 
@@ -139,13 +138,6 @@ class ArgsParser:
         if model == "animegan":
             assert data.get(
                 "anime_smooth_root"), "Thiếu data.anime_smooth_root cho AnimeGAN"
-
-        optim = cfg.get("optim", {})
-        if model == "cyclegan":
-            assert optim.get("lr") is not None, "Thiếu optim.lr cho CycleGAN"
-        else:
-            assert optim.get("g_lr") is not None and optim.get("d_lr") is not None, \
-                "Thiếu optim.g_lr / optim.d_lr cho AnimeGAN"
 
     @staticmethod
     def _to_namespace(cfg: dict) -> SimpleNamespace:

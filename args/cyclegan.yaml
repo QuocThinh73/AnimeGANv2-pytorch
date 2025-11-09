@@ -18,7 +18,8 @@ train:
   decay_epoch: 100
 
 optim:
-  lr: 0.0002
+  g_lr: 0.0002
+  d_lr: 0.0002
 
 losses:
   lambda_adv_g: 1.0

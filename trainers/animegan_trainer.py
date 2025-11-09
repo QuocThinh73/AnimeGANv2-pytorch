@@ -5,12 +5,13 @@ from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
 from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss, TotalVariationLoss
 from utils.image_processing import rgb_to_gray
+from tqdm import tqdm
+from typing import Literal
 
 
 class AnimeGANTrainer(BaseTrainer):
     def __init__(self, args, loader):
         super().__init__(args, loader)
-        self.stage = "pretrain" if args.resume else "train"
 
     def build_models(self):
         # Networks
@@ -39,10 +40,13 @@ class AnimeGANTrainer(BaseTrainer):
             lambda_tv=self.args.lambda_tv)
 
         # Output directories
+        self.pretrain_dir = os.path.join(
+            self.args.out_dir, "pretrain")
         self.sample_dir = os.path.join(
-            self.args.out_dir, "animegan", "samples")
+            self.args.out_dir, "samples")
         self.ckpt_dir = os.path.join(
-            self.args.out_dir, "animegan", "checkpoints")
+            self.args.out_dir, "checkpoints")
+        os.makedirs(self.pretrain_dir, exist_ok=True)
         os.makedirs(self.sample_dir, exist_ok=True)
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
@@ -66,6 +70,10 @@ class AnimeGANTrainer(BaseTrainer):
 
     def build_optim(self):
         # Optimizers
+        if self.args.init_epochs and not self.args.resume:
+            self.optimizer_G_pretrain = torch.optim.Adam(
+                self.G.parameters(), lr=self.args.g_lr_pretrain, betas=(0.5, 0.999))
+
         self.optimizer_G = torch.optim.Adam(
             self.G.parameters(), lr=self.args.g_lr, betas=(0.5, 0.999))
         self.optimizer_D = torch.optim.Adam(
@@ -79,9 +87,13 @@ class AnimeGANTrainer(BaseTrainer):
             self.optimizer_D.load_state_dict(state_dict["opt_D"])
 
     @torch.no_grad()
-    def _save_samples(self, fake_anime: torch.Tensor, epoch: int):
-        save_image(self._denorm(fake_anime)[:4], os.path.join(
-            self.sample_dir, f"fake_anime_epoch_{epoch:03d}.png"), nrow=2)
+    def _save_samples(self, fake_anime: torch.Tensor, mode: Literal["pretrain", "train"], epoch: int):
+        if mode == "pretrain":
+            save_image(self._denorm(fake_anime)[:4], os.path.join(
+                self.pretrain_dir, f"fake_anime_pretrain_epoch_{epoch:03d}.png"), nrow=2)
+        elif mode == "train":
+            save_image(self._denorm(fake_anime)[:4], os.path.join(
+                self.sample_dir, f"fake_anime_epoch_{epoch:03d}.png"), nrow=2)
 
     @torch.no_grad()
     def _save_checkpoints(self, epoch: int):
@@ -218,4 +230,49 @@ class AnimeGANTrainer(BaseTrainer):
         # Save
         if epoch % self.args.save_every == 0 and self._last_fake_anime_style is not None:
             self._save_checkpoints(epoch)
-            self._save_samples(self._last_fake_anime_style, epoch)
+            self._save_samples(self._last_fake_anime_style, "train", epoch)
+
+    def run(self):
+        self.build_models()
+        self.build_optim()
+
+        if self.args.init_epochs and not self.args.resume:
+            self.pretrain_generator()
+
+        step = 0
+        first_epoch = self.args.start_epoch + 1 if self.args.resume else 1
+
+        for epoch in tqdm(range(first_epoch, self.args.num_epochs + 1),
+                          desc=f"Training {self.args.model} from epoch {first_epoch} to {self.args.num_epochs}"):
+            for batch in self.loader:
+                step += 1
+                self.train_one_step(batch, step)
+            self.on_epoch_end(epoch)
+
+    def pretrain_generator(self):
+        for epoch in tqdm(range(1, self.args.init_epochs + 1), desc=f"Pretraining generator from epoch 1 to {self.args.init_epochs}"):
+            total, n, last_fake_anime = 0.0, 0, None
+            for batch in self.loader:
+                real_photo = batch["photo_image"].to(self.device)
+
+                self.optimizer_G_pretrain.zero_grad()
+                fake_anime = self.G(real_photo)
+                loss_con = self.criterion_content(fake_anime, real_photo)
+                loss_con.backward()
+                self.optimizer_G_pretrain.step()
+
+                total += float(loss_con.item())
+                n += 1
+                last_fake_anime = fake_anime.detach().cpu()
+
+            print(f"[Pretrain][Epoch {epoch}/{self.args.init_epochs}] | "
+                  f"Content loss: {total / n:.5f}")
+
+            if last_fake_anime is not None:
+                self._save_samples(last_fake_anime, "pretrain", epoch)
+
+        torch.save(self.G.state_dict(), os.path.join(
+            self.pretrain_dir, "G_pretrain.pth"))
+
+        del self.optimizer_G_pretrain
+        torch.cuda.empty_cache()
