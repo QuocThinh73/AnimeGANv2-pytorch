@@ -25,15 +25,13 @@ class AnimeGANTrainer(BaseTrainer):
             self.D.load_state_dict(state_dict["D"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss(self.args.lambda_adv)
+        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
         self.criterion_content = AnimeGANContentLoss(
-            self.args.lambda_con, self.args.backbone)
+            lambda_con=self.args.lambda_con, backbone=self.args.backbone)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
-            self.args.lambda_gra, self.args.backbone)
+            lambda_gra=self.args.lambda_gra, backbone=self.args.backbone)
         self.criterion_color_reconstruction = AnimeGANColorReconstructionLoss(
-            self.args.lambda_col)
-        self.criterion_total_variation = TotalVariationLoss(
-            self.args.lambda_tv)
+            lambda_col=self.args.lambda_col)
 
         # Output directories
         self.sample_dir = os.path.join(

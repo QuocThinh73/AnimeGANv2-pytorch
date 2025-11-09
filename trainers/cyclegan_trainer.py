@@ -35,7 +35,7 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss()
+        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
         self.criterion_cycle = CycleGANCycleConsistencyLoss(
             lambda_cyc=self.args.lambda_cyc)
         self.criterion_identity = CycleGANIdentityLoss(
