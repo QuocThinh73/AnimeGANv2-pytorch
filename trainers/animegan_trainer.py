@@ -54,6 +54,8 @@ class AnimeGANTrainer(BaseTrainer):
             "G_tv": 0.0,
             "D_real": 0.0,
             "D_fake": 0.0,
+            "D_gray": 0.0,
+            "D_smooth": 0.0,
             "n": 0,
         }
 
@@ -129,32 +131,20 @@ class AnimeGANTrainer(BaseTrainer):
         ######### Discriminator #########
         self.optimizer_D.zero_grad()
 
-        real_anime_style_gray = rgb_to_gray(real_anime_style)
-
-        # Logits
-        pred_real_anime_style = self.D(real_anime_style)
-        pred_real_anime_style_gray = self.D(real_anime_style_gray)
-        pred_fake_anime_style = self.D(fake_anime_style.detach())
-        pred_fake_anime_smooth = self.D(real_anime_smooth)
+        # Predictions
+        pred_real_anime = self.D(real_anime_style)
+        pred_fake_anime = self.D(fake_anime_style.detach())
+        pred_gray_anime = self.D(rgb_to_gray(real_anime_style))
+        pred_smooth_anime = self.D(real_anime_smooth)
 
         # Real loss
-        loss_D_real_anime_style = self.criterion_GAN(
-            pred_real_anime_style, 1.0)
-        loss_D_real_anime_style_gray = self.criterion_GAN(
-            pred_real_anime_style_gray, 1.0)
-
-        # Fake loss
-        loss_D_fake_anime_style = self.criterion_GAN(
-            pred_fake_anime_style, 0.0)
-        loss_D_fake_anime_smooth = self.criterion_GAN(
-            pred_fake_anime_smooth, 0.0)
+        loss_real = self.criterion_GAN(pred_real_anime, 1.0)
+        loss_fake = self.criterion_GAN(pred_fake_anime, 0.0)
+        loss_gray = self.criterion_GAN(pred_gray_anime, 0.0)
+        loss_smooth = self.criterion_GAN(pred_smooth_anime, 0.0)
 
         # Total loss
-        loss_D_real = 0.5 * (loss_D_real_anime_style +
-                             loss_D_real_anime_style_gray)
-        loss_D_fake = 0.5 * (loss_D_fake_anime_style +
-                             loss_D_fake_anime_smooth)
-        loss_D = loss_D_real + loss_D_fake
+        loss_D = loss_real + loss_fake + loss_gray + self.args.lambda_edge * loss_smooth
         loss_D.backward()
 
         self.optimizer_D.step()
@@ -168,8 +158,10 @@ class AnimeGANTrainer(BaseTrainer):
         self.logger["G_gray"] += float(loss_grayscale_style.item())
         self.logger["G_color"] += float(loss_color_reconstruction.item())
         self.logger["G_tv"] += float(loss_total_variation.item())
-        self.logger["D_real"] += float(loss_D_real.item())
-        self.logger["D_fake"] += float(loss_D_fake.item())
+        self.logger["D_real"] += float(loss_real.item())
+        self.logger["D_fake"] += float(loss_fake.item())
+        self.logger["D_gray"] += float(loss_gray.item())
+        self.logger["D_smooth"] += float(loss_smooth.item())
         self.logger["n"] += 1
 
     def on_epoch_end(self, epoch: int):
@@ -184,16 +176,20 @@ class AnimeGANTrainer(BaseTrainer):
         avg_G_tv = self.logger["G_tv"] / n
         avg_D_real = self.logger["D_real"] / n
         avg_D_fake = self.logger["D_fake"] / n
+        avg_D_gray = self.logger["D_gray"] / n
+        avg_D_smooth = self.logger["D_smooth"] / n
         print(f"[Epoch {epoch}] | "
               f"G_total: {avg_G_total:.5f} | "
-              f"D_total: {avg_D_total:.5f} |"
-              f"G_adv: {avg_G_adv:.5f} |"
-              f"G_content: {avg_G_content:.5f} |"
-              f"G_gray: {avg_G_gray:.5f} |"
-              f"G_color: {avg_G_color:.5f} |"
-              f"G_tv: {avg_G_tv:.5f} |"
-              f"D_real: {avg_D_real:.5f} |"
-              f"D_fake: {avg_D_fake:.5f}")
+              f"D_total: {avg_D_total:.5f} | "
+              f"G_adv: {avg_G_adv:.5f} | "
+              f"G_content: {avg_G_content:.5f} | "
+              f"G_gray: {avg_G_gray:.5f} | "
+              f"G_color: {avg_G_color:.5f} | "
+              f"G_tv: {avg_G_tv:.5f} | "
+              f"D_real: {avg_D_real:.5f} | "
+              f"D_fake: {avg_D_fake:.5f} | "
+              f"D_gray: {avg_D_gray:.5f} | "
+              f"D_smooth: {avg_D_smooth:.5f}")
 
         # Reset logger
         self.logger = {
@@ -206,6 +202,8 @@ class AnimeGANTrainer(BaseTrainer):
             "G_tv": 0.0,
             "D_real": 0.0,
             "D_fake": 0.0,
+            "D_gray": 0.0,
+            "D_smooth": 0.0,
             "n": 0,
         }
 

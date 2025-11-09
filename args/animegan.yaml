@@ -26,5 +26,6 @@ losses:
   lambda_con: 1.5
   lambda_gra: 3.0
   lambda_col: 10.0
+  lambda_edge: 0.1
   lambda_tv: 0.001
-  backbone: vgg16
+  backbone: vgg19
