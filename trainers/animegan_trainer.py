@@ -32,6 +32,8 @@ class AnimeGANTrainer(BaseTrainer):
             lambda_gra=self.args.lambda_gra, backbone=self.args.backbone)
         self.criterion_color_reconstruction = AnimeGANColorReconstructionLoss(
             lambda_col=self.args.lambda_col)
+        self.criterion_total_variation = TotalVariationLoss(
+            lambda_tv=self.args.lambda_tv)
 
         # Output directories
         self.sample_dir = os.path.join(
