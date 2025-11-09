@@ -177,7 +177,7 @@ class AnimeGANTrainer(BaseTrainer):
         avg_D_real = self.logger["D_real"] / n
         avg_D_fake = self.logger["D_fake"] / n
         avg_D_gray = self.logger["D_gray"] / n
-        avg_D_smooth = self.logger["D_smooth"] / n
+        avg_D_smooth = self.args.lambda_edge * self.logger["D_smooth"] / n
         print(f"[Epoch {epoch}] | "
               f"G_total: {avg_G_total:.5f} | "
               f"D_total: {avg_D_total:.5f} | "
