@@ -65,6 +65,7 @@ class ArgsParser:
         p.add_argument("--lambda_gra", type=float, default=None)
         p.add_argument("--lambda_col", type=float, default=None)
         p.add_argument("--lambda_tv", type=float, default=None)
+        p.add_argument("--lambda_edge", type=float, default=None)
         p.add_argument("--backbone", type=str, default=None)
 
         return p
@@ -114,7 +115,7 @@ class ArgsParser:
 
         # losses
         for key in ["lambda_cyc", "lambda_idt", "lambda_adv",
-                    "lambda_con", "lambda_gra", "lambda_col", "lambda_tv", "backbone"]:
+                    "lambda_con", "lambda_gra", "lambda_col", "lambda_tv", "lambda_edge", "backbone"]:
             if key in cli:
                 out["losses"][key] = cli[key]
 
@@ -181,6 +182,7 @@ class ArgsParser:
         flat["lambda_gra"] = losses.get("lambda_gra")
         flat["lambda_col"] = losses.get("lambda_col")
         flat["lambda_tv"] = losses.get("lambda_tv")
+        flat["lambda_edge"] = losses.get("lambda_edge")
         flat["backbone"] = losses.get("backbone")
 
         return SimpleNamespace(**flat)
