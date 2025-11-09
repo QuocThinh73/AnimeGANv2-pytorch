@@ -32,14 +32,13 @@ class GrayscaleStyleLoss(nn.Module):
             self.vgg = VGG19Features().to()
 
     def forward(self, fake_anime: torch.Tensor, real_anime: torch.Tensor) -> torch.Tensor:
-        fake_anime_gray = rgb_to_gray(fake_anime)
         real_anime_gray = rgb_to_gray(real_anime)
 
-        fake_anime_gray_features = self.vgg(fake_anime_gray)
+        fake_anime_features = self.vgg(fake_anime)
         real_anime_gray_features = self.vgg(real_anime_gray)
 
         return self.lambda_gra * self.l1_loss(
-            gram_matrix(fake_anime_gray_features),
+            gram_matrix(fake_anime_features),
             gram_matrix(real_anime_gray_features)
         )
 

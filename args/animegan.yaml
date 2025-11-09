@@ -11,7 +11,7 @@ train:
   batch_size: 4
   num_workers: 1
   save_every: 10
-  out_dir: output
+  out_dir: output/Shinkai/animegan
   seed: 42
   resume: false
   start_epoch: 0
@@ -22,10 +22,11 @@ optim:
   d_lr: 0.00016
 
 losses:
-  lambda_adv: 300.0
+  lambda_adv_g: 300.0
+  lambda_adv_d: 1.0
   lambda_con: 1.5
   lambda_gra: 3.0
   lambda_col: 10.0
-  lambda_edge: 0.1
-  lambda_tv: 0.0
+  lambda_smo: 0.1
+  lambda_tv: 1.0
   backbone: vgg19

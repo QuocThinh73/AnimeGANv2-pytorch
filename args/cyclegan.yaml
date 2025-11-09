@@ -21,6 +21,7 @@ optim:
   lr: 0.0002
 
 losses:
-  lambda_adv: 1.0
+  lambda_adv_g: 1.0
+  lambda_adv_d: 1.0
   lambda_cyc: 10.0
   lambda_idt: 5.0

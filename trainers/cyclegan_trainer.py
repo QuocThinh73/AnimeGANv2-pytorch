@@ -35,7 +35,10 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.load_state_dict(state_dict["D_anime"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
+        self.criterion_GAN_G = AdversarialLoss(
+            lambda_adv=self.args.lambda_adv_g)
+        self.criterion_GAN_D = AdversarialLoss(
+            lambda_adv=self.args.lambda_adv_d)
         self.criterion_cycle = CycleGANCycleConsistencyLoss(
             lambda_cyc=self.args.lambda_cyc)
         self.criterion_identity = CycleGANIdentityLoss(
@@ -131,11 +134,11 @@ class CycleGANTrainer(BaseTrainer):
 
         # Adversarial loss
         fake_anime = self.G_photo2anime(real_photo)
-        loss_adv_photo2anime = self.criterion_GAN(
+        loss_adv_photo2anime = self.criterion_GAN_G(
             self.D_anime(fake_anime), 1.0)
 
         fake_photo = self.G_anime2photo(real_anime)
-        loss_adv_anime2photo = self.criterion_GAN(
+        loss_adv_anime2photo = self.criterion_GAN_G(
             self.D_photo(fake_photo), 1.0)
 
         # Cycle consistency loss
@@ -168,13 +171,13 @@ class CycleGANTrainer(BaseTrainer):
 
         # Real loss
         pred_real_photo = self.D_photo(real_photo)
-        loss_D_photo_real = self.criterion_GAN(pred_real_photo, 1.0)
+        loss_D_photo_real = self.criterion_GAN_D(pred_real_photo, 1.0)
 
         # Fake loss
         fake_photo = fake_photo.detach()
         fake_photo = self.photo_buffer.push_and_pop(fake_photo)
         pred_fake_photo = self.D_photo(fake_photo)
-        loss_D_photo_fake = self.criterion_GAN(pred_fake_photo, 0.0)
+        loss_D_photo_fake = self.criterion_GAN_D(pred_fake_photo, 0.0)
 
         # Total discriminator loss
         loss_D_photo = 0.5 * (loss_D_photo_real + loss_D_photo_fake)
@@ -189,13 +192,13 @@ class CycleGANTrainer(BaseTrainer):
 
         # Real loss
         pred_real_anime = self.D_anime(real_anime)
-        loss_D_anime_real = self.criterion_GAN(pred_real_anime, 1.0)
+        loss_D_anime_real = self.criterion_GAN_D(pred_real_anime, 1.0)
 
         # Fake loss
         fake_anime = fake_anime.detach()
         fake_anime = self.anime_buffer.push_and_pop(fake_anime)
         pred_fake_anime = self.D_anime(fake_anime)
-        loss_D_anime_fake = self.criterion_GAN(pred_fake_anime, 0.0)
+        loss_D_anime_fake = self.criterion_GAN_D(pred_fake_anime, 0.0)
 
         # Total discriminator loss
         loss_D_anime = 0.5 * (loss_D_anime_real + loss_D_anime_fake)

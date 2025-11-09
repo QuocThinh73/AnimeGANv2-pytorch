@@ -25,7 +25,10 @@ class AnimeGANTrainer(BaseTrainer):
             self.D.load_state_dict(state_dict["D"])
 
         # Loss functions
-        self.criterion_GAN = AdversarialLoss(lambda_adv=self.args.lambda_adv)
+        self.criterion_GAN_G = AdversarialLoss(
+            lambda_adv=self.args.lambda_adv_g)
+        self.criterion_GAN_D = AdversarialLoss(
+            lambda_adv=self.args.lambda_adv_d)
         self.criterion_content = AnimeGANContentLoss(
             lambda_con=self.args.lambda_con, backbone=self.args.backbone)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
@@ -105,7 +108,7 @@ class AnimeGANTrainer(BaseTrainer):
         fake_anime_style = self.G(real_photo)
         pred_fake_anime_style = self.D(fake_anime_style)
 
-        loss_adversarial = self.criterion_GAN(pred_fake_anime_style, 1.0)
+        loss_adversarial = self.criterion_GAN_G(pred_fake_anime_style, 1.0)
         loss_content = self.criterion_content(fake_anime_style, real_photo)
         loss_grayscale_style = self.criterion_grayscale_style(
             fake_anime_style, real_anime_style)
@@ -135,16 +138,21 @@ class AnimeGANTrainer(BaseTrainer):
         pred_real_anime = self.D(real_anime_style)
         pred_fake_anime = self.D(fake_anime_style.detach())
         pred_gray_anime = self.D(rgb_to_gray(real_anime_style))
-        pred_smooth_anime = self.D(real_anime_smooth)
+        pred_smooth_gray_anime = self.D(rgb_to_gray(real_anime_smooth))
 
         # Real loss
-        loss_real = self.criterion_GAN(pred_real_anime, 1.0)
-        loss_fake = self.criterion_GAN(pred_fake_anime, 0.0)
-        loss_gray = self.criterion_GAN(pred_gray_anime, 0.0)
-        loss_smooth = self.criterion_GAN(pred_smooth_anime, 0.0)
+        # Classify real anime as real
+        loss_real = self.criterion_GAN_D(pred_real_anime, 1.0)
+        # Classify generated as fake
+        loss_fake = self.criterion_GAN_D(pred_fake_anime, 0.0)
+        # Classify real anime gray as fake
+        loss_gray = self.criterion_GAN_D(pred_gray_anime, 0.0)
+        # Classify real anime smooth gray as fake
+        loss_smooth = self.args.lambda_smo * \
+            self.criterion_GAN_D(pred_smooth_gray_anime, 0.0)
 
         # Total loss
-        loss_D = loss_real + loss_fake + loss_gray + self.args.lambda_edge * loss_smooth
+        loss_D = loss_real + loss_fake + loss_gray + loss_smooth
         loss_D.backward()
 
         self.optimizer_D.step()
@@ -177,7 +185,7 @@ class AnimeGANTrainer(BaseTrainer):
         avg_D_real = self.logger["D_real"] / n
         avg_D_fake = self.logger["D_fake"] / n
         avg_D_gray = self.logger["D_gray"] / n
-        avg_D_smooth = self.args.lambda_edge * self.logger["D_smooth"] / n
+        avg_D_smooth = self.logger["D_smooth"] / n
         print(f"[Epoch {epoch}] | "
               f"G_total: {avg_G_total:.5f} | "
               f"D_total: {avg_D_total:.5f} | "
