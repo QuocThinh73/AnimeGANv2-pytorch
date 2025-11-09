@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import save_image
 from .base_trainer import BaseTrainer
 from models import AnimeGANGenerator, AnimeGANDiscriminator
-from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss
+from losses import AdversarialLoss, AnimeGANContentLoss, AnimeGANGrayscaleStyleLoss, AnimeGANColorReconstructionLoss, TotalVariationLoss
 from utils.image_processing import rgb_to_gray
 
 
@@ -49,6 +49,7 @@ class AnimeGANTrainer(BaseTrainer):
             "G_content": 0.0,
             "G_gray": 0.0,
             "G_color": 0.0,
+            "G_tv": 0.0,
             "D_real": 0.0,
             "D_fake": 0.0,
             "n": 0,
@@ -106,11 +107,13 @@ class AnimeGANTrainer(BaseTrainer):
             fake_anime_style, real_anime_style)
         loss_color_reconstruction = self.criterion_color_reconstruction(
             fake_anime_style, real_photo)
+        loss_total_variation = self.criterion_total_variation(fake_anime_style)
 
         # Total loss
         loss_G = (
             loss_adversarial + loss_content
             + loss_grayscale_style + loss_color_reconstruction
+            + loss_total_variation
         )
         loss_G.backward()
 
@@ -162,6 +165,7 @@ class AnimeGANTrainer(BaseTrainer):
         self.logger["G_content"] += float(loss_content.item())
         self.logger["G_gray"] += float(loss_grayscale_style.item())
         self.logger["G_color"] += float(loss_color_reconstruction.item())
+        self.logger["G_tv"] += float(loss_total_variation.item())
         self.logger["D_real"] += float(loss_D_real.item())
         self.logger["D_fake"] += float(loss_D_fake.item())
         self.logger["n"] += 1
@@ -175,9 +179,19 @@ class AnimeGANTrainer(BaseTrainer):
         avg_G_content = self.logger["G_content"] / n
         avg_G_gray = self.logger["G_gray"] / n
         avg_G_color = self.logger["G_color"] / n
+        avg_G_tv = self.logger["G_tv"] / n
         avg_D_real = self.logger["D_real"] / n
         avg_D_fake = self.logger["D_fake"] / n
-        print(f"[Epoch {epoch}] | G_total: {avg_G_total:.3f} | D_total: {avg_D_total:.3f} | G_adv: {avg_G_adv:.3f} | G_content: {avg_G_content:.3f} | G_gray: {avg_G_gray:.3f} | G_color: {avg_G_color:.3f} | D_real: {avg_D_real:.3f} | D_fake: {avg_D_fake:.3f}")
+        print(f"[Epoch {epoch}] | "
+              f"G_total: {avg_G_total:.5f} | "
+              f"D_total: {avg_D_total:.5f} |"
+              f"G_adv: {avg_G_adv:.5f} |"
+              f"G_content: {avg_G_content:.5f} |"
+              f"G_gray: {avg_G_gray:.5f} |"
+              f"G_color: {avg_G_color:.5f} |"
+              f"G_tv: {avg_G_tv:.5f} |"
+              f"D_real: {avg_D_real:.5f} |"
+              f"D_fake: {avg_D_fake:.5f}")
 
         # Reset logger
         self.logger = {
@@ -187,6 +201,7 @@ class AnimeGANTrainer(BaseTrainer):
             "G_content": 0.0,
             "G_gray": 0.0,
             "G_color": 0.0,
+            "G_tv": 0.0,
             "D_real": 0.0,
             "D_fake": 0.0,
             "n": 0,

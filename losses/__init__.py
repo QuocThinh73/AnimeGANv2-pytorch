@@ -1,4 +1,4 @@
-from .common import AdversarialLoss
+from .common import AdversarialLoss, TotalVariationLoss
 from .cyclegan import CycleConsistencyLoss as CycleGANCycleConsistencyLoss
 from .cyclegan import IdentityLoss as CycleGANIdentityLoss
 from .animegan import ContentLoss as AnimeGANContentLoss
