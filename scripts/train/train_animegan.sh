@@ -8,21 +8,23 @@ shift 4
 EXTRAS=("$@")
 
 IMG="cyclegan-trainer:cu118"
-NAME="cyclegan-${STYLE,,}-${GPU_ID}"
+NAME="animegan-${STYLE,,}-${GPU_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
+ANIME_SMOOTH_ROOT="/workspace/data/${STYLE}/smooth"
 ARGS_ROOT="/workspace/args"
 OUT_DIR="/workspace/output/${STYLE}"
-CONT_CKPT_DIR="/workspace/output/${STYLE}/cyclegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
+CONT_CKPT_DIR="/workspace/output/${STYLE}/animegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
 fi
 
 CMD_ARGS=(
-  --model cyclegan
+  --model animegan
   --photo_root "$PHOTO_ROOT"
   --anime_style_root "$ANIME_STYLE_ROOT"
+  --anime_smooth_root "$ANIME_SMOOTH_ROOT"
   --out_dir "$OUT_DIR"
   --args_root "$ARGS_ROOT"
 )

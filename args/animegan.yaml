@@ -1,9 +1,9 @@
 model: animegan
 
 data:
-  photo_root: /data/photo
-  anime_style_root: /data/anime/style
-  anime_smooth_root: /data/anime/smooth
+  photo_root: /data/train_photo
+  anime_style_root: /data/Shinkai/style
+  anime_smooth_root: /data/Shinkai/smooth
   image_size: 256
 
 train:
@@ -28,3 +28,7 @@ losses:
   lambda_col: 10.0
   lambda_tv: 0.001
   backbone: vgg16
+
+io:
+  args_root: args
+  out_dir: output/Shinkai/animegan
