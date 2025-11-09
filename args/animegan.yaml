@@ -25,7 +25,7 @@ optim:
 
 losses:
   lambda_adv_g: 300.0
-  lambda_adv_d: 1.0
+  lambda_adv_d: 300.0
   lambda_con: 1.5
   lambda_gra: 3.0
   lambda_col: 10.0
