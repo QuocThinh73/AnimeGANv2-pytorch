@@ -24,7 +24,3 @@ losses:
   lambda_adv: 1.0
   lambda_cyc: 10.0
   lambda_idt: 5.0
-
-io:
-  args_root: args
-  out_dir: output/Shinkai/cyclegan

@@ -28,7 +28,3 @@ losses:
   lambda_col: 10.0
   lambda_tv: 0.001
   backbone: vgg16
-
-io:
-  args_root: args
-  out_dir: output/Shinkai/animegan
