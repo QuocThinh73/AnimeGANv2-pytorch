@@ -24,9 +24,10 @@ class ArgsParser:
     def _build_cli(self) -> argparse.ArgumentParser:
         p = argparse.ArgumentParser()
 
-        p.add_argument("--model", type=str, required=True,
-                       choices=self.model_choices)
         p.add_argument("--config_file", type=str, required=True)
+
+        # model
+        p.add_argument("--model", type=str, default=None)
 
         # data
         p.add_argument("--photo_root", type=str, default=None)
