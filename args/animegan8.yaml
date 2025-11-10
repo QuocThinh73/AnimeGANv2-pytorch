@@ -1,0 +1,35 @@
+model: animegan
+
+data:
+  photo_root: data/train_photo/
+  anime_style_root: data/Shinkai/style/
+  anime_smooth_root: data/Shinkai/smooth/
+  image_size: 256
+
+train:
+  num_epochs: 100
+  pretrain_epochs: 1
+  batch_size: 4
+  num_workers: 1
+  save_every: 10
+  out_dir: output/Shinkai/animegan/
+  seed: 42
+  resume: false
+  start_epoch: 0
+  ckpt_dir: null
+
+optim:
+  g_lr_pretrain: 0.0001
+  g_lr: 0.00008
+  d_lr: 0.00016
+
+losses:
+  lambda_adv_g: 7.5
+  lambda_con: 7.5
+  lambda_gra: 3.0
+  lambda_col: 15.0
+  lambda_tv: 1.0
+  lambda_adv_d: 7.5
+  lambda_adv_gray: 7.5
+  lambda_adv_edge: 0.0
+  backbone: vgg19
