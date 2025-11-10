@@ -36,14 +36,14 @@ class AnimeGANTrainer(BaseTrainer):
             lambda_col=self.args.lambda_col)
         self.criterion_total_variation = TotalVariationLoss(
             lambda_tv=self.args.lambda_tv)
-        
+
         # Loss functions of discriminator
         self.criterion_GAN_D = AdversarialLoss(
             lambda_adv=self.args.lambda_adv_d)
         self.criterion_gray = AdversarialLoss(
-            lambda_adv=self.arg.lambda_adv_gray)
+            lambda_adv=self.args.lambda_adv_gray)
         self.criterion_edge = AdversarialLoss(
-            lambda_adv=self.arg.lambda_adv_edge)
+            lambda_adv=self.args.lambda_adv_edge)
 
         # Output directories
         self.pretrain_dir = os.path.join(

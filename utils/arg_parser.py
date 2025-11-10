@@ -15,12 +15,8 @@ class ArgsParser:
 
         cfg = self._load_yaml(cli.config_file)
 
-        cfg["model"] = cli.model
-
         cli_overrides = self._flatten_overrides(self._ns_to_dict(cli))
         cfg = self._deep_update(cfg, cli_overrides)
-
-        self._validate_cfg(cfg)
 
         args = self._to_namespace(cfg)
         return args
@@ -127,18 +123,6 @@ class ArgsParser:
         # loại bỏ block trống
         out = {k: v for k, v in out.items() if v not in ({}, None)}
         return out
-
-    def _validate_cfg(self, cfg: dict):
-        model = cfg.get("model")
-        data = cfg.get("data", {})
-        assert model in self.model_choices, f"model phải là {self.model_choices}"
-
-        for k in ["photo_root", "anime_style_root"]:
-            assert data.get(k), f"Thiếu data.{k} trong config"
-
-        if model == "animegan":
-            assert data.get(
-                "anime_smooth_root"), "Thiếu data.anime_smooth_root cho AnimeGAN"
 
     @staticmethod
     def _to_namespace(cfg: dict) -> SimpleNamespace:
