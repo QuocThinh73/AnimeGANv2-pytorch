@@ -147,41 +147,9 @@ Sau khi training, kết quả sẽ được lưu trong thư mục `output/`:
 
 Dự án này được xây dựng dựa trên và tham khảo từ các repository sau:
 
-- **[AnimeGANv2](https://github.com/TachibanaYoshino/AnimeGANv2)** - Repository gốc của tác giả TachibanaYoshino, cung cấp implementation TensorFlow và dataset
-- **[animegan2-pytorch](https://github.com/bryandlee/animegan2-pytorch)** - PyTorch implementation của bryandlee, cung cấp nhiều pretrained models
-- **[pytorch-animeGAN](https://github.com/ptran1203/pytorch-animeGAN)** - PyTorch implementation của ptran1203 với nhiều phong cách anime
-- **[PyTorch-CycleGAN](https://github.com/aitorzip/PyTorch-CycleGAN)** - PyTorch implementation của CycleGAN từ aitorzip
+- **[AnimeGANv2](https://github.com/TachibanaYoshino/AnimeGANv2)**
+- **[animegan2-pytorch](https://github.com/bryandlee/animegan2-pytorch)**
+- **[pytorch-animeGAN](https://github.com/ptran1203/pytorch-animeGAN)**
+- **[PyTorch-CycleGAN](https://github.com/aitorzip/PyTorch-CycleGAN)**
 
 Chúng tôi xin gửi lời cảm ơn chân thành đến các tác giả và contributors của các repository trên vì đã cung cấp mã nguồn và tài liệu tham khảo quý giá.
-
-## Citation
-
-Nếu bạn sử dụng code này trong nghiên cứu, vui lòng cite các paper gốc:
-
-**AnimeGANv2:**
-```bibtex
-@inproceedings{chen2021animeganv2,
-  title={AnimeGANv2: Learning to Generate High-Quality Anime Images from Photos},
-  author={Chen, Yunjey and others},
-  booktitle={arXiv preprint arXiv:2102.06239},
-  year={2021}
-}
-```
-
-**CycleGAN:**
-```bibtex
-@inproceedings{zhu2017unpaired,
-  title={Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks},
-  author={Zhu, Jun-Yan and Park, Taesung and Isola, Phillip and Efros, Alexei A},
-  booktitle={ICCV},
-  year={2017}
-}
-```
-
-## License
-
-MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
-
-## Liên hệ
-
-Nếu có câu hỏi hoặc góp ý, vui lòng tạo issue trên GitHub repository.

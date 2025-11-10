@@ -8,7 +8,7 @@ data:
 
 train:
   num_epochs: 100
-  init_epochs: 1
+  pretrain_epochs: 1
   batch_size: 4
   num_workers: 1
   save_every: 10
@@ -19,9 +19,9 @@ train:
   ckpt_dir: null
 
 optim:
+  g_lr_pretrain: 0.0001
   g_lr: 0.00008
   d_lr: 0.00016
-  init_lr: 0.0001
 
 losses:
   lambda_adv_g: 300.0

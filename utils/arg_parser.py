@@ -42,6 +42,7 @@ class ArgsParser:
 
         # train
         p.add_argument("--num_epochs", type=int, default=None)
+        p.add_argument("--pretrain_epochs", type=int, default=None)
         p.add_argument("--batch_size", type=int, default=None)
         p.add_argument("--num_workers", type=int, default=None)
         p.add_argument("--save_every", type=int, default=None)
@@ -53,6 +54,7 @@ class ArgsParser:
         p.add_argument("--decay_epoch", type=int, default=None)
 
         # optim
+        p.add_argument("--g_lr_pretrain", type=float, default=None)
         p.add_argument("--g_lr", type=float, default=None)
         p.add_argument("--d_lr", type=float, default=None)
 
@@ -152,6 +154,7 @@ class ArgsParser:
 
         train = cfg.get("train", {})
         flat["num_epochs"] = train.get("num_epochs", 100)
+        flat["pretrain_epochs"] = train.get("pretrain_epochs", 0)
         flat["batch_size"] = train.get("batch_size", 4)
         flat["num_workers"] = train.get("num_workers", 1)
         flat["save_every"] = train.get("save_every", 10)
@@ -163,7 +166,7 @@ class ArgsParser:
         flat["decay_epoch"] = train.get("decay_epoch", 100)
 
         optim = cfg.get("optim", {})
-        flat["lr"] = optim.get("lr")
+        flat["g_lr_pretrain"] = optim.get("g_lr_pretrain")
         flat["g_lr"] = optim.get("g_lr")
         flat["d_lr"] = optim.get("d_lr")
 

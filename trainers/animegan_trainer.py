@@ -70,7 +70,7 @@ class AnimeGANTrainer(BaseTrainer):
 
     def build_optim(self):
         # Optimizers
-        if self.args.init_epochs and not self.args.resume:
+        if self.args.pretrain_epochs > 0 and not self.args.resume:
             self.optimizer_G_pretrain = torch.optim.Adam(
                 self.G.parameters(), lr=self.args.g_lr_pretrain, betas=(0.5, 0.999))
 
@@ -236,7 +236,7 @@ class AnimeGANTrainer(BaseTrainer):
         self.build_models()
         self.build_optim()
 
-        if self.args.init_epochs and not self.args.resume:
+        if self.args.pretrain_epochs > 0 and not self.args.resume:
             self.pretrain_generator()
 
         step = 0
@@ -250,7 +250,7 @@ class AnimeGANTrainer(BaseTrainer):
             self.on_epoch_end(epoch)
 
     def pretrain_generator(self):
-        for epoch in tqdm(range(1, self.args.init_epochs + 1), desc=f"Pretraining generator from epoch 1 to {self.args.init_epochs}"):
+        for epoch in tqdm(range(1, self.args.pretrain_epochs + 1), desc=f"Pretraining generator from epoch 1 to {self.args.pretrain_epochs}"):
             total, n, last_fake_anime = 0.0, 0, None
             for batch in self.loader:
                 real_photo = batch["photo_image"].to(self.device)
@@ -265,7 +265,7 @@ class AnimeGANTrainer(BaseTrainer):
                 n += 1
                 last_fake_anime = fake_anime.detach().cpu()
 
-            print(f"[Pretrain][Epoch {epoch}/{self.args.init_epochs}] | "
+            print(f"[Pretrain][Epoch {epoch}/{self.args.pretrain_epochs}] | "
                   f"Content loss: {total / n:.5f}")
 
             if last_fake_anime is not None:
