@@ -26,8 +26,7 @@ class ArgsParser:
         return args
 
     def _build_cli(self) -> argparse.ArgumentParser:
-        p = argparse.ArgumentParser(
-            "Train Anime/Cycle GAN with YAML config + CLI override")
+        p = argparse.ArgumentParser()
 
         p.add_argument("--model", type=str, required=True,
                        choices=self.model_choices)
@@ -116,7 +115,7 @@ class ArgsParser:
                 out["optim"][key] = cli[key]
 
         # losses
-        for key in ["lambda_cyc", "lambda_idt", "lambda_adv_g", "lambda_con", 
+        for key in ["lambda_cyc", "lambda_idt", "lambda_adv_g", "lambda_con",
                     "lambda_gra", "lambda_col", "lambda_tv", "lambda_adv_d", "lambda_adv_gray", "lambda_adv_edge", "backbone"]:
             if key in cli:
                 out["losses"][key] = cli[key]

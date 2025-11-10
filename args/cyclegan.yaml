@@ -1,8 +1,8 @@
 model: cyclegan
 
 data:
-  photo_root: /data/train_photo
-  anime_style_root: /data/Shinkai/style
+  photo_root: data/train_photo/
+  anime_style_root: data/Shinkai/style/
   image_size: 256
 
 train:

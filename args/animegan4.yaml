@@ -1,9 +1,9 @@
 model: animegan
 
 data:
-  photo_root: /data/train_photo
-  anime_style_root: /data/Shinkai/style
-  anime_smooth_root: /data/Shinkai/smooth
+  photo_root: data/train_photo/
+  anime_style_root: data/Shinkai/style/
+  anime_smooth_root: data/Shinkai/smooth/
   image_size: 256
 
 train:
@@ -12,7 +12,7 @@ train:
   batch_size: 4
   num_workers: 1
   save_every: 10
-  out_dir: output/Shinkai/animegan
+  out_dir: output/Shinkai/animegan/
   seed: 42
   resume: false
   start_epoch: 0
