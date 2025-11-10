@@ -31,4 +31,4 @@ losses:
   lambda_col: 10.0
   lambda_tv: 1.0
   lambda_smo: 0.0
-  backbone: vgg19
+  backbone: vgg16
