@@ -25,10 +25,11 @@ optim:
 
 losses:
   lambda_adv_g: 10.0
-  lambda_adv_d: 10.0
   lambda_con: 1.5
   lambda_gra: 3.0
   lambda_col: 10.0
   lambda_tv: 1.0
-  lambda_smo: 0.0
+  lambda_adv_d: 10.0
+  lambda_adv_gray: 10.0
+  lambda_adv_edge: 0.0
   backbone: vgg19

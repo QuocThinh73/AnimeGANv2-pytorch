@@ -61,12 +61,13 @@ class ArgsParser:
         p.add_argument("--lambda_cyc", type=float, default=None)
         p.add_argument("--lambda_idt", type=float, default=None)
         p.add_argument("--lambda_adv_g", type=float, default=None)
-        p.add_argument("--lambda_adv_d", type=float, default=None)
         p.add_argument("--lambda_con", type=float, default=None)
         p.add_argument("--lambda_gra", type=float, default=None)
         p.add_argument("--lambda_col", type=float, default=None)
         p.add_argument("--lambda_tv", type=float, default=None)
-        p.add_argument("--lambda_smo", type=float, default=None)
+        p.add_argument("--lambda_adv_d", type=float, default=None)
+        p.add_argument("--lambda_adv_gray", type=float, default=None)
+        p.add_argument("--lambda_adv_edge", type=float, default=None)
         p.add_argument("--backbone", type=str, default=None)
 
         return p
@@ -115,8 +116,8 @@ class ArgsParser:
                 out["optim"][key] = cli[key]
 
         # losses
-        for key in ["lambda_cyc", "lambda_idt", "lambda_adv_g", "lambda_adv_d",
-                    "lambda_con", "lambda_gra", "lambda_col", "lambda_tv", "lambda_smo", "backbone"]:
+        for key in ["lambda_cyc", "lambda_idt", "lambda_adv_g", "lambda_con", 
+                    "lambda_gra", "lambda_col", "lambda_tv", "lambda_adv_d", "lambda_adv_gray", "lambda_adv_edge", "backbone"]:
             if key in cli:
                 out["losses"][key] = cli[key]
 
@@ -173,12 +174,13 @@ class ArgsParser:
         flat["lambda_cyc"] = losses.get("lambda_cyc")
         flat["lambda_idt"] = losses.get("lambda_idt")
         flat["lambda_adv_g"] = losses.get("lambda_adv_g")
-        flat["lambda_adv_d"] = losses.get("lambda_adv_d")
         flat["lambda_con"] = losses.get("lambda_con")
         flat["lambda_gra"] = losses.get("lambda_gra")
         flat["lambda_col"] = losses.get("lambda_col")
         flat["lambda_tv"] = losses.get("lambda_tv")
-        flat["lambda_smo"] = losses.get("lambda_smo")
+        flat["lambda_adv_d"] = losses.get("lambda_adv_d")
+        flat["lambda_adv_gray"] = losses.get("lambda_adv_gray")
+        flat["lambda_adv_edge"] = losses.get("lambda_adv_edge")
         flat["backbone"] = losses.get("backbone")
 
         return SimpleNamespace(**flat)

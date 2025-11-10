@@ -25,11 +25,9 @@ class AnimeGANTrainer(BaseTrainer):
             self.G.load_state_dict(state_dict["G"])
             self.D.load_state_dict(state_dict["D"])
 
-        # Loss functions
+        # Loss functions of generator
         self.criterion_GAN_G = AdversarialLoss(
             lambda_adv=self.args.lambda_adv_g)
-        self.criterion_GAN_D = AdversarialLoss(
-            lambda_adv=self.args.lambda_adv_d)
         self.criterion_content = AnimeGANContentLoss(
             lambda_con=self.args.lambda_con, backbone=self.args.backbone)
         self.criterion_grayscale_style = AnimeGANGrayscaleStyleLoss(
@@ -38,6 +36,14 @@ class AnimeGANTrainer(BaseTrainer):
             lambda_col=self.args.lambda_col)
         self.criterion_total_variation = TotalVariationLoss(
             lambda_tv=self.args.lambda_tv)
+        
+        # Loss functions of discriminator
+        self.criterion_GAN_D = AdversarialLoss(
+            lambda_adv=self.args.lambda_adv_d)
+        self.criterion_gray = AdversarialLoss(
+            lambda_adv=self.arg.lambda_adv_gray)
+        self.criterion_edge = AdversarialLoss(
+            lambda_adv=self.arg.lambda_adv_edge)
 
         # Output directories
         self.pretrain_dir = os.path.join(
@@ -158,13 +164,12 @@ class AnimeGANTrainer(BaseTrainer):
         # Classify generated as fake
         loss_fake = self.criterion_GAN_D(pred_fake_anime, 0.0)
         # Classify real anime gray as fake
-        loss_gray = self.criterion_GAN_D(pred_gray_anime, 0.0)
+        loss_gray = self.criterion_gray(pred_gray_anime, 0.0)
         # Classify real anime smooth gray as fake
-        loss_smooth = self.args.lambda_smo * \
-            self.criterion_GAN_D(pred_smooth_gray_anime, 0.0)
+        loss_edge = self.criterion_edge(pred_smooth_gray_anime, 0.0)
 
         # Total loss
-        loss_D = loss_real + loss_fake + loss_gray + loss_smooth
+        loss_D = loss_real + loss_fake + loss_gray + loss_edge
         loss_D.backward()
 
         self.optimizer_D.step()
@@ -181,7 +186,7 @@ class AnimeGANTrainer(BaseTrainer):
         self.logger["D_real"] += float(loss_real.item())
         self.logger["D_fake"] += float(loss_fake.item())
         self.logger["D_gray"] += float(loss_gray.item())
-        self.logger["D_smooth"] += float(loss_smooth.item())
+        self.logger["D_smooth"] += float(loss_edge.item())
         self.logger["n"] += 1
 
     def on_epoch_end(self, epoch: int):
