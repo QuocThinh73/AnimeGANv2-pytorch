@@ -13,7 +13,7 @@ PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 ANIME_SMOOTH_ROOT="/workspace/data/${STYLE}/smooth"
 ARGS_ROOT="/workspace/args"
-OUT_DIR="/workspace/output/${STYLE}"
+OUT_DIR="/workspace/output/${STYLE}/animegan"
 CONT_CKPT_DIR="/workspace/output/${STYLE}/animegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then

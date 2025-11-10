@@ -12,7 +12,7 @@ NAME="cyclegan-${STYLE,,}-${GPU_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 ARGS_ROOT="/workspace/args"
-OUT_DIR="/workspace/output/${STYLE}"
+OUT_DIR="/workspace/output/${STYLE}/cyclegan"
 CONT_CKPT_DIR="/workspace/output/${STYLE}/cyclegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then

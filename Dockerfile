@@ -10,10 +10,10 @@ WORKDIR /workspace
 
 COPY requirements.txt /workspace/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu118  && pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu118  && pip3 install --no-cache-dir -r requirements.txt
 
 COPY . /workspace
 
 RUN mkdir -p /workspace/output
 
-ENTRYPOINT ["python", "train.py"]
+ENTRYPOINT ["python3", "train.py"]
