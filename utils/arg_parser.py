@@ -13,8 +13,7 @@ class ArgsParser:
     def parse(self) -> SimpleNamespace:
         cli = self._build_cli().parse_args()
 
-        config_path = os.path.join(cli.args_root, f"{cli.model}.yaml")
-        cfg = self._load_yaml(config_path)
+        cfg = self._load_yaml(cli.config_file)
 
         cfg["model"] = cli.model
 
@@ -32,7 +31,7 @@ class ArgsParser:
 
         p.add_argument("--model", type=str, required=True,
                        choices=self.model_choices)
-        p.add_argument("--args_root", type=str, required=True)
+        p.add_argument("--config_file", type=str, required=True)
 
         # data
         p.add_argument("--photo_root", type=str, default=None)
