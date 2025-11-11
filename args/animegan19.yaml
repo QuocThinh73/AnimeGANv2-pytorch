@@ -16,7 +16,7 @@ train:
   seed: 42
   resume: false
   start_epoch: 0
-  ckpt_dir: null
+  ckpt_file: null
 
 optim:
   g_lr_pretrain: 0.0001

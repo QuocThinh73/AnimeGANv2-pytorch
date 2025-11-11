@@ -13,8 +13,8 @@ PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/Shinkai/style"
 ANIME_SMOOTH_ROOT="/workspace/data/Shinkai/smooth"
 CONFIG_FILE="/workspace/args/animegan${CONFIG_ID}.yaml"
-OUT_DIR="/workspace/output/${CONFIG_ID}"
-CONT_CKPT_DIR="/workspace/output/${CONFIG_ID}/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
+OUT_DIR="/workspace/output/Shinkai/animegan${CONFIG_ID}"
+CONT_CKPT_FILE="/workspace/output/${CONFIG_ID}/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})/ckpt.pth"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
@@ -30,7 +30,7 @@ CMD_ARGS=(
 )
 
 if [[ "$RESUME" == "1" ]]; then
-  CMD_ARGS+=( --resume 1 --start_epoch "$START_EPOCH" --ckpt_dir "$CONT_CKPT_DIR" )
+  CMD_ARGS+=( --resume 1 --start_epoch "$START_EPOCH" --ckpt_file "$CONT_CKPT_FILE" )
 fi
 
 docker run -d \

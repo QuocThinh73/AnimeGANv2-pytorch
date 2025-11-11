@@ -45,7 +45,7 @@ class ArgsParser:
         p.add_argument("--seed", type=int, default=None)
         p.add_argument("--resume", action=BooleanOptionalAction, default=False)
         p.add_argument("--start_epoch", type=int, default=None)
-        p.add_argument("--ckpt_dir", type=str, default=None)
+        p.add_argument("--ckpt_file", type=str, default=None)
         p.add_argument("--decay_epoch", type=int, default=None)
 
         # optim
@@ -102,7 +102,7 @@ class ArgsParser:
 
         # train
         for key in ["num_epochs", "batch_size", "num_workers", "save_every",
-                    "out_dir", "seed", "resume", "start_epoch", "ckpt_dir", "decay_epoch"]:
+                    "out_dir", "seed", "resume", "start_epoch", "ckpt_file", "decay_epoch"]:
             if key in cli:
                 out["train"][key] = cli[key]
 
@@ -146,7 +146,7 @@ class ArgsParser:
         flat["seed"] = train.get("seed", 42)
         flat["resume"] = train.get("resume", False)
         flat["start_epoch"] = train.get("start_epoch", 0)
-        flat["ckpt_dir"] = train.get("ckpt_dir")
+        flat["ckpt_file"] = train.get("ckpt_file")
         flat["decay_epoch"] = train.get("decay_epoch", 100)
 
         optim = cfg.get("optim", {})

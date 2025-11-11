@@ -26,8 +26,8 @@ class CycleGANTrainer(BaseTrainer):
             self.D_anime.apply(weights_init_normal)
         # Load checkpoints
         else:
-            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            state_dict = torch.load(
+                self.args.ckpt_file, map_location=self.device)
 
             self.G_photo2anime.load_state_dict(state_dict["G_photo2anime"])
             self.G_anime2photo.load_state_dict(state_dict["G_anime2photo"])
@@ -78,8 +78,8 @@ class CycleGANTrainer(BaseTrainer):
 
         # Load checkpoints
         if self.args.resume:
-            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            state_dict = torch.load(
+                self.args.ckpt_file, map_location=self.device)
             self.optimizer_G.load_state_dict(state_dict["opt_G"])
             self.optimizer_D_photo.load_state_dict(state_dict["opt_D_photo"])
             self.optimizer_D_anime.load_state_dict(state_dict["opt_D_anime"])

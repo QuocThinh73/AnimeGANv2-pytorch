@@ -14,7 +14,7 @@ train:
   seed: 42
   resume: false
   start_epoch: 0
-  ckpt_dir: null
+  ckpt_file: null
   decay_epoch: 100
 
 optim:

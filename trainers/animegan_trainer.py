@@ -20,8 +20,8 @@ class AnimeGANTrainer(BaseTrainer):
 
         # Load checkpoints
         if self.args.resume:
-            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            state_dict = torch.load(
+                self.args.ckpt_file, map_location=self.device)
             self.G.load_state_dict(state_dict["G"])
             self.D.load_state_dict(state_dict["D"])
 
@@ -87,8 +87,8 @@ class AnimeGANTrainer(BaseTrainer):
 
         # Load checkpoints
         if self.args.resume:
-            ckpt_path = os.path.join(self.args.ckpt_dir, "ckpt.pth")
-            state_dict = torch.load(ckpt_path, map_location=self.device)
+            state_dict = torch.load(
+                self.args.ckpt_file, map_location=self.device)
             self.optimizer_G.load_state_dict(state_dict["opt_G"])
             self.optimizer_D.load_state_dict(state_dict["opt_D"])
 
