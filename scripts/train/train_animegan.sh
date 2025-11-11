@@ -1,6 +1,6 @@
 set -euo pipefail
 
-STYLE="${1:?}"
+CONFIG_ID="${1:?}"
 GPU_ID="${2:?}"
 RESUME="${3:?}"
 START_EPOCH="${4:?}"
@@ -8,13 +8,13 @@ shift 4
 EXTRAS=("$@")
 
 IMG="cyclegan-trainer:cu118"
-NAME="animegan-${STYLE,,}-${GPU_ID}"
+NAME="animegan${CONFIG_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
-ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
-ANIME_SMOOTH_ROOT="/workspace/data/${STYLE}/smooth"
+ANIME_STYLE_ROOT="/workspace/data/Shinkai/style"
+ANIME_SMOOTH_ROOT="/workspace/data/Shinkai/smooth"
 ARGS_ROOT="/workspace/args"
-OUT_DIR="/workspace/output/${STYLE}/animegan"
-CONT_CKPT_DIR="/workspace/output/${STYLE}/animegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
+OUT_DIR="/workspace/output/${CONFIG_ID}"
+CONT_CKPT_DIR="/workspace/output/${CONFIG_ID}/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
