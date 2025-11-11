@@ -12,7 +12,7 @@ NAME="animegan${CONFIG_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/Shinkai/style"
 ANIME_SMOOTH_ROOT="/workspace/data/Shinkai/smooth"
-ARGS_ROOT="/workspace/args"
+CONFIG_FILE="/workspace/args/animegan${CONFIG_ID}.yaml"
 OUT_DIR="/workspace/output/${CONFIG_ID}"
 CONT_CKPT_DIR="/workspace/output/${CONFIG_ID}/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})"
 
@@ -26,7 +26,7 @@ CMD_ARGS=(
   --anime_style_root "$ANIME_STYLE_ROOT"
   --anime_smooth_root "$ANIME_SMOOTH_ROOT"
   --out_dir "$OUT_DIR"
-  --args_root "$ARGS_ROOT"
+  --config_file "$CONFIG_FILE"
 )
 
 if [[ "$RESUME" == "1" ]]; then
