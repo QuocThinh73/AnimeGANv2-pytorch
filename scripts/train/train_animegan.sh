@@ -1,13 +1,13 @@
 set -euo pipefail
 
-CONFIG_ID="${1:?}"
-GPU_ID="${2:?}"
-RESUME="${3:?}"
-START_EPOCH="${4:?}"
-shift 4
+IMG="${1:?}"
+CONFIG_ID="${2:?}"
+GPU_ID="${3:?}"
+RESUME="${4:?}"
+START_EPOCH="${5:?}"
+shift 5
 EXTRAS=("$@")
 
-IMG="cyclegan-trainer:cu118"
 NAME="animegan${CONFIG_ID}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/Shinkai/style"

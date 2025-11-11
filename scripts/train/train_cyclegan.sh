@@ -1,14 +1,14 @@
 set -euo pipefail
 
-STYLE="${1:?}"
-GPU_ID="${2:?}"
-RESUME="${3:?}"
-START_EPOCH="${4:?}"
-shift 4
+IMG="${1:?}"
+STYLE="${2:?}"
+GPU_ID="${3:?}"
+RESUME="${4:?}"
+START_EPOCH="${5:?}"
+shift 5
 EXTRAS=("$@")
 
-IMG="cyclegan-trainer:cu118"
-NAME="cyclegan-${STYLE,,}-${GPU_ID}"
+NAME="cyclegan-${STYLE}"
 PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 CONFIG_FILE="/workspace/args/cyclegan.yaml"
