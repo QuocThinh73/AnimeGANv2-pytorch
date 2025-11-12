@@ -3,9 +3,7 @@ set -euo pipefail
 IMG="${1:?}"
 CONFIG_ID="${2:?}"
 GPU_ID="${3:?}"
-RESUME="${4:?}"
-START_EPOCH="${5:?}"
-shift 5
+shift 3
 EXTRAS=("$@")
 
 NAME="animegan${CONFIG_ID}"
@@ -27,10 +25,6 @@ CMD_ARGS=(
   --out_dir "$OUT_DIR"
   --config_file "$CONFIG_FILE"
 )
-
-if [[ "$RESUME" == "1" ]]; then
-  CMD_ARGS+=( --resume --start_epoch "$START_EPOCH")
-fi
 
 docker run -d \
   --name "$NAME" \
