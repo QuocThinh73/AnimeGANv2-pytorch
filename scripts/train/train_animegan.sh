@@ -29,7 +29,7 @@ CMD_ARGS=(
 )
 
 if [[ "$RESUME" == "1" ]]; then
-  CMD_ARGS+=( --resume 1 --start_epoch "$START_EPOCH")
+  CMD_ARGS+=( --resume --start_epoch "$START_EPOCH")
 fi
 
 docker run -d \

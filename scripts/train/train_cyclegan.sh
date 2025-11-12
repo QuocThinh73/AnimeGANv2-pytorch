@@ -28,7 +28,7 @@ CMD_ARGS=(
 )
 
 if [[ "$RESUME" == "1" ]]; then
-  CMD_ARGS+=( --resume 1 --start_epoch "$START_EPOCH" --ckpt_file "$CONT_CKPT_FILE" )
+  CMD_ARGS+=( --resume --start_epoch "$START_EPOCH" --ckpt_file "$CONT_CKPT_FILE" )
 fi
 
 docker run -d \
