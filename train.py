@@ -1,9 +1,9 @@
-# train.py
 import torch
 from trainers import build_trainer
 from datasets import Photo2AnimeDataset
 from torch.utils.data import DataLoader
 from utils.arg_parser import ArgsParser
+
 
 def main():
     args = ArgsParser().parse()
@@ -31,6 +31,6 @@ def main():
     trainer = build_trainer(args, loader)
     trainer.run()
 
+
 if __name__ == "__main__":
     main()
-    
