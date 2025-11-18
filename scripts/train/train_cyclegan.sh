@@ -11,7 +11,6 @@ PHOTO_ROOT="/workspace/data/train_photo"
 ANIME_STYLE_ROOT="/workspace/data/${STYLE}/style"
 CONFIG_FILE="/workspace/args/cyclegan.yaml"
 OUT_DIR="/workspace/output/${STYLE}/cyclegan"
-CONT_CKPT_FILE="/workspace/output/${STYLE}/cyclegan/checkpoints/epoch_$(printf "%03d" ${START_EPOCH})/ckpt.pth"
 
 if docker ps -a --format '{{.Names}}' | grep -wq "$NAME" ; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
