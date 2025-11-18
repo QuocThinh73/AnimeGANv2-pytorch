@@ -10,12 +10,22 @@ from models import AnimeGANGenerator, CycleGANGenerator
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("image_file", type=str)
-    parser.add_argument("ckpt_file", type=str)
+    parser.add_argument("--mode", type=str,
+                        choices=["single", "directory"], required=True)
+    parser.add_argument("--image_file", type=str)
+    parser.add_argument("--image_dir", type=str)
+    parser.add_argument("--ckpt_file", type=str, required=True)
     parser.add_argument("--image_size", type=int, default=256)
     parser.add_argument("--output_dir", type=str, default="output/infer")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.mode == "single" and not args.image_file:
+        parser.error("--image_file is required when mode is 'single'.")
+    if args.mode == "directory" and not args.image_dir:
+        parser.error("--image_dir is required when mode is 'directory'.")
+
+    return args
 
 
 def load_generator(model_type, ckpt_path, device):
@@ -56,7 +66,7 @@ def detect_model_type(ckpt_path):
     raise ValueError()
 
 
-def infer(image_file, ckpt_file, output_dir, image_size=256, device=None):
+def infer(image_file, ckpt_file, image_size=256, device=None):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -74,15 +84,43 @@ def infer(image_file, ckpt_file, output_dir, image_size=256, device=None):
 def main():
     args = parse_args()
 
-    output_image = infer(
-        image_file=args.image_file,
-        ckpt_file=args.ckpt_file,
-        output_dir=args.output_dir,
-        image_size=args.image_size,
-    )
-    output_image_name = os.path.basename(args.image_file) + "_" + os.path.basename(
-        args.ckpt_file).split(".")[0].split("_")[1:] + ".png"
-    save_image(output_image, os.path.join(args.output_dir, output_image_name))
+    os.makedirs(args.output_dir, exist_ok=True)
+    ckpt_stem = os.path.splitext(os.path.basename(args.ckpt_file))[0]
+
+    if args.mode == "single":
+        output_image = infer(
+            image_file=args.image_file,
+            ckpt_file=args.ckpt_file,
+            image_size=args.image_size,
+        )
+        image_stem = os.path.splitext(os.path.basename(args.image_file))[0]
+        output_image_name = f"{image_stem}_{ckpt_stem}.png"
+        save_image(output_image, os.path.join(
+            args.output_dir, output_image_name))
+    else:
+        supported_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+        image_paths = sorted(
+            [
+                os.path.join(args.image_dir, f)
+                for f in os.listdir(args.image_dir)
+                if os.path.splitext(f.lower())[1] in supported_exts
+            ]
+        )
+
+        if not image_paths:
+            raise ValueError(
+                f"No supported images found in directory: {args.image_dir}")
+
+        for image_path in image_paths:
+            output_image = infer(
+                image_file=image_path,
+                ckpt_file=args.ckpt_file,
+                image_size=args.image_size,
+            )
+            image_stem = os.path.splitext(os.path.basename(image_path))[0]
+            output_image_name = f"{image_stem}_{ckpt_stem}.png"
+            save_image(output_image, os.path.join(
+                args.output_dir, output_image_name))
 
 
 if __name__ == "__main__":
