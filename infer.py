@@ -8,15 +8,12 @@ from models import AnimeGANGenerator, CycleGANGenerator
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Inference script for AnimeGANv2 and CycleGAN")
+    parser = argparse.ArgumentParser()
 
-    parser.add_argument("--ckpt_path", type=str, required=True)
-    parser.add_argument("--model", type=str, required=True,
-                        choices=["animegan", "cyclegan"])
-    parser.add_argument("--image_path", type=str, required=True,)
-    parser.add_argument("--output_dir", type=str, required=True,)
-    parser.add_argument("--image_size", type=int, default=256,)
+    parser.add_argument("image_file", type=str)
+    parser.add_argument("ckpt_file", type=str)
+    parser.add_argument("--image_size", type=int, default=256)
+    parser.add_argument("--output_dir", type=str, default="output/infer")
 
     return parser.parse_args()
 
@@ -26,6 +23,8 @@ def load_generator(model_type, ckpt_path, device):
         generator = AnimeGANGenerator().to(device)
     elif model_type == "cyclegan":
         generator = CycleGANGenerator().to(device)
+    else:
+        raise ValueError()
 
     generator.load_state_dict(torch.load(ckpt_path, map_location=device))
     generator.eval()
@@ -48,24 +47,42 @@ def denormalize(tensor):
     return tensor * 0.5 + 0.5
 
 
-def main():
-    args = parse_args()
+def detect_model_type(ckpt_path):
+    filename = os.path.basename(ckpt_path).lower()
+    if "animegan" in filename:
+        return "animegan"
+    if "cyclegan" in filename:
+        return "cyclegan"
+    raise ValueError()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    generator = load_generator(args.model, args.ckpt_path, device)
-    input_tensor = preprocess_image(
-        args.image_path, args.image_size).to(device)
+def infer(image_file, ckpt_file, output_dir, image_size=256, device=None):
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model_type = detect_model_type(ckpt_file)
+    generator = load_generator(model_type, ckpt_file, device)
+    input_tensor = preprocess_image(image_file, image_size).to(device)
+
     with torch.no_grad():
         output_tensor = generator(input_tensor)
         output_tensor = denormalize(output_tensor)
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    input_filename = os.path.basename(args.image_path)
-    output_filename = f"{os.path.splitext(input_filename)[0]}_anime{os.path.splitext(input_filename)[1]}"
-    output_path = os.path.join(args.output_dir, output_filename)
+    return output_tensor.cpu()
 
-    save_image(output_tensor, output_path)
+
+def main():
+    args = parse_args()
+
+    output_image = infer(
+        image_file=args.image_file,
+        ckpt_file=args.ckpt_file,
+        output_dir=args.output_dir,
+        image_size=args.image_size,
+    )
+    output_image_name = os.path.basename(args.image_file) + "_" + os.path.basename(
+        args.ckpt_file).split(".")[0].split("_")[1:] + ".png"
+    save_image(output_image, os.path.join(args.output_dir, output_image_name))
 
 
 if __name__ == "__main__":
