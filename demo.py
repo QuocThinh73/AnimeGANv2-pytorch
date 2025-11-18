@@ -1,283 +1,169 @@
 import streamlit as st
-import io
 import os
-import pickle
+import tempfile
+import torch
+from torchvision import transforms
+from PIL import Image
+import io
 
-# Try to import PyTorch and related libraries
+# Import logic từ infer.py
 try:
-    import torch
-    import torchvision.transforms as transforms
-    from PIL import Image
-    from models import AnimeGANGenerator
-    TORCH_AVAILABLE = True
-except ImportError as e:
-    TORCH_AVAILABLE = False
-    TORCH_ERROR = str(e)
-except OSError as e:
-    TORCH_AVAILABLE = False
-    TORCH_ERROR = str(e)
-
-# Helper function to load checkpoint with compatibility fixes
-def load_checkpoint_compatible(checkpoint_path, device='cpu'):
-    """
-    Load checkpoint with multiple compatibility methods to handle
-    PyTorch version mismatches, especially the _rebuild_device_tensor_from_cpu_tensor error.
-    """
-    # Fix: Monkey patch _rebuild_device_tensor_from_cpu_tensor if it doesn't exist
-    # This handles the case where checkpoint was saved with newer PyTorch but loaded with older
-    if not hasattr(torch._utils, '_rebuild_device_tensor_from_cpu_tensor'):
-        def _rebuild_device_tensor_from_cpu_tensor(storage, device_str):
-            """Fallback for missing _rebuild_device_tensor_from_cpu_tensor"""
-            # Try to use _rebuild_tensor as fallback
-            if hasattr(torch._utils, '_rebuild_tensor'):
-                # Convert device string to device object
-                device_obj = torch.device(device_str) if isinstance(device_str, str) else device_str
-                return torch._utils._rebuild_tensor(storage, device_obj)
-            else:
-                # Last resort: return storage as tensor
-                return storage
-        torch._utils._rebuild_device_tensor_from_cpu_tensor = _rebuild_device_tensor_from_cpu_tensor
-    
-    # Method 1: Standard load with weights_only=False (PyTorch 2.0+)
-    try:
-        return torch.load(checkpoint_path, map_location=device, weights_only=False)
-    except (AttributeError, RuntimeError, pickle.UnpicklingError, TypeError) as e:
-        pass
-    
-    # Method 2: Load without weights_only (older PyTorch or compatibility)
-    try:
-        return torch.load(checkpoint_path, map_location=device)
-    except (AttributeError, RuntimeError, pickle.UnpicklingError, TypeError) as e:
-        pass
-    
-    # Method 3: Try loading with pickle_module explicitly
-    try:
-        return torch.load(checkpoint_path, map_location=device, pickle_module=pickle)
-    except Exception as e:
-        pass
-    
-    # If all methods fail, raise error with helpful message
-    raise RuntimeError(
-        f"Không thể load checkpoint từ {checkpoint_path}. "
-        "Lỗi có thể do không tương thích phiên bản PyTorch. "
-        "Thử cài đặt lại PyTorch với phiên bản tương thích hoặc train lại model."
-    )
+    from infer import infer, detect_model_type
+except ImportError:
+    st.error("❌ Không tìm thấy file 'infer.py'. Vui lòng đảm bảo file này nằm cùng thư mục với demo.py")
+    st.stop()
 
 # Page config
 st.set_page_config(
-    page_title="AnimeGANv2 Demo",
+    page_title="AnimeGANv2/CycleGAN Demo",
     page_icon="🎨",
     layout="wide"
 )
 
 # Title
-st.title("🎨 AnimeGANv2 - Chuyển ảnh thành Anime")
-st.markdown("Chọn checkpoint và upload ảnh để tạo ảnh anime style!")
+st.title("🎨 AI Art Style Transfer")
+st.markdown("Chuyển đổi ảnh thật sang Anime/Art style sử dụng model của bạn.")
 
 # Initialize session state
-if 'model' not in st.session_state:
-    st.session_state.model = None
-if 'device' not in st.session_state:
-    st.session_state.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if 'selected_epoch' not in st.session_state:
-    st.session_state.selected_epoch = None
+if 'selected_model_path' not in st.session_state:
+    st.session_state.selected_model_path = None
 
-# Function to scan available checkpoints
-def scan_checkpoints():
-    """Scan for available checkpoints in output/animegan/checkpoints/"""
-    checkpoints_dir = "output/animegan/checkpoints"
-    available_epochs = []
+# --- Function 1: Recursive Scan ---
+def scan_models_recursive():
+    """
+    Quét toàn bộ file .pth trong folder 'output' và các thư mục con.
+    """
+    root_dir = "output"
+    available_models = []
     
-    if os.path.exists(checkpoints_dir):
-        # Get all epoch directories
-        for item in os.listdir(checkpoints_dir):
-            epoch_dir = os.path.join(checkpoints_dir, item)
-            if os.path.isdir(epoch_dir) and item.startswith("epoch_"):
-                g_path = os.path.join(epoch_dir, "G.pth")
-                if os.path.exists(g_path):
-                    # Extract epoch number
-                    try:
-                        epoch_num = int(item.replace("epoch_", ""))
-                        available_epochs.append({
-                            'epoch': epoch_num,
-                            'name': item,
-                            'path': g_path
-                        })
-                    except ValueError:
-                        continue
-    
-    # Sort by epoch number
-    available_epochs.sort(key=lambda x: x['epoch'], reverse=True)
-    return available_epochs
+    if not os.path.exists(root_dir):
+        os.makedirs(root_dir)
+        return []
 
-# Sidebar for model loading
+    # Sử dụng os.walk để duyệt cây thư mục
+    for root, dirs, files in os.walk(root_dir):
+        for file in files:
+            if file.endswith('.pth'):
+                full_path = os.path.join(root, file)
+                # Tạo tên hiển thị (vd: folder_con/model.pth)
+                rel_path = os.path.relpath(full_path, root_dir)
+                
+                # Xác định loại model để hiển thị icon cho đẹp
+                try:
+                    model_type = detect_model_type(full_path)
+                    icon = "🎌" if model_type == "animegan" else "🔄"
+                except:
+                    icon = "❓"
+                    model_type = "unknown"
+
+                available_models.append({
+                    'display_name': f"{icon} {rel_path}",
+                    'full_path': full_path,
+                    'filename': file,
+                    'type': model_type
+                })
+    
+    # Sắp xếp theo tên
+    available_models.sort(key=lambda x: x['display_name'])
+    return available_models
+
+# --- Sidebar ---
 with st.sidebar:
-    st.header("⚙️ Cài đặt Model")
+    st.header("⚙️ Chọn Model")
     
-    # Scan for available checkpoints
-    available_checkpoints = scan_checkpoints()
+    models = scan_models_recursive()
     
-    if not available_checkpoints:
-        st.error("❌ Không tìm thấy checkpoint nào!")
-        st.info("Vui lòng đảm bảo có checkpoint trong `output/animegan/checkpoints/epoch_xxx/`")
+    if not models:
+        st.warning("⚠️ Không tìm thấy file .pth nào trong folder `output/`")
+        st.info("Hãy copy file checkpoint vào `output/` hoặc các sub-folder của nó.")
     else:
-        st.success(f"✅ Tìm thấy {len(available_checkpoints)} checkpoint(s)")
-        
-        # Create list of epoch names for selectbox
-        epoch_options = [f"Epoch {cp['epoch']:03d}" for cp in available_checkpoints]
-        
-        # Selectbox for choosing epoch
+        # Selectbox
         selected_index = st.selectbox(
-            "Chọn checkpoint:",
-            options=range(len(epoch_options)),
-            format_func=lambda x: epoch_options[x],
-            help="Chọn epoch checkpoint bạn muốn sử dụng"
+            "Danh sách Model có sẵn:",
+            options=range(len(models)),
+            format_func=lambda x: models[x]['display_name']
         )
         
-        selected_checkpoint = available_checkpoints[selected_index]
-        st.info(f"📁 Đường dẫn: `{selected_checkpoint['path']}`")
+        selected_item = models[selected_index]
+        st.session_state.selected_model_path = selected_item['full_path']
         
-        # Load model button
-        load_model = st.button("🔄 Load Model", type="primary")
+        st.success(f"✅ Đã chọn: **{selected_item['filename']}**")
+        st.caption(f"Đường dẫn: `{selected_item['full_path']}`")
+        st.caption(f"Loại model: `{selected_item['type'].upper()}`")
         
-        if load_model:
-            checkpoint_path = selected_checkpoint['path']
-            try:
-                with st.spinner("Đang load model..."):
-                    # Initialize model
-                    model = AnimeGANGenerator().to(st.session_state.device)
-                    
-                    # Load checkpoint with compatibility handling
-                    # Use helper function that tries multiple methods
-                    state_dict = load_checkpoint_compatible(checkpoint_path, device='cpu')
-                    
-                    # Load state dict to model
-                    model.load_state_dict(state_dict)
-                    
-                    # Move model to target device after loading
-                    model = model.to(st.session_state.device)
-                    model.eval()
-                    
-                    # Save to session state
-                    st.session_state.model = model
-                    st.session_state.selected_epoch = selected_checkpoint['epoch']
-                    
-                    st.success(f"✅ Model đã được load thành công! (Epoch {selected_checkpoint['epoch']:03d})")
-                    
-                    # Show device info
-                    device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
-                    st.info(f"Đang sử dụng: {device_name}")
-                    
-            except Exception as e:
-                st.error(f"Lỗi khi load model: {str(e)}")
-                st.exception(e)
-                st.markdown("""
-                **Gợi ý khắc phục:**
-                - Lỗi này thường do không tương thích phiên bản PyTorch
-                - Thử cài đặt lại PyTorch với phiên bản tương thích
-                - Hoặc train lại model với phiên bản PyTorch hiện tại
-                """)
-        
-        # Show current loaded model info
-        if st.session_state.model is not None and st.session_state.selected_epoch is not None:
-            st.markdown("---")
-            st.success(f"✅ Model hiện tại: Epoch {st.session_state.selected_epoch:03d}")
+        st.markdown("---")
+        device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
+        st.info(f"💻 Chế độ chạy: {device_name}")
 
-# Main content area
+# --- Main Content ---
 col1, col2 = st.columns(2)
 
 with col1:
     st.header("📸 Ảnh gốc")
+    uploaded_file = st.file_uploader("Upload ảnh (JPG/PNG)", type=['jpg', 'jpeg', 'png'])
     
-    # Image upload
-    uploaded_image = st.file_uploader(
-        "Chọn ảnh để chuyển đổi",
-        type=['png', 'jpg', 'jpeg'],
-        help="Upload ảnh bạn muốn chuyển thành anime style"
-    )
-    
-    if uploaded_image is not None:
-        # Display original image
-        image = Image.open(uploaded_image).convert('RGB')
-        st.image(image, caption="Ảnh gốc", use_container_width=True)
-        
-        # Image info
-        st.info(f"Kích thước: {image.size[0]} x {image.size[1]} pixels")
+    if uploaded_file:
+        image = Image.open(uploaded_file).convert('RGB')
+        st.image(image, caption="Original Image", use_container_width=True)
 
 with col2:
-    st.header("🎨 Ảnh Anime")
+    st.header("✨ Kết quả")
     
-    if st.session_state.model is None:
-        st.warning("⚠️ Vui lòng load model trước (bên sidebar)")
-    else:
-        if uploaded_image is not None:
-            # Inference button
-            if st.button("✨ Tạo ảnh Anime", type="primary"):
-                try:
-                    with st.spinner("Đang xử lý..."):
-                        # Preprocess image
-                        transform = transforms.Compose([
-                            transforms.Resize((256, 256)),
-                            transforms.ToTensor(),
-                            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-                        ])
-                        
-                        # Convert PIL to tensor
-                        image_tensor = transform(image).unsqueeze(0).to(st.session_state.device)
-                        
-                        # Inference
-                        with torch.no_grad():
-                            output = st.session_state.model(image_tensor)
-                            
-                            # Denormalize: from [-1, 1] to [0, 1]
-                            output = output * 0.5 + 0.5
-                            output = torch.clamp(output, 0, 1)
-                            
-                            # Convert to PIL Image
-                            output_image = transforms.ToPILImage()(output.squeeze(0).cpu())
-                            
-                            # Display result
-                            st.image(output_image, caption="Ảnh Anime", use_container_width=True)
-                            
-                            # Download button
-                            buf = io.BytesIO()
-                            output_image.save(buf, format='PNG')
-                            st.download_button(
-                                label="💾 Tải ảnh về",
-                                data=buf.getvalue(),
-                                file_name="anime_result.png",
-                                mime="image/png"
-                            )
-                            
-                            st.success("✅ Hoàn thành!")
-                            
-                except Exception as e:
-                    st.error(f"Lỗi khi xử lý ảnh: {str(e)}")
-                    st.exception(e)
-        else:
-            st.info("👆 Upload ảnh ở cột bên trái để bắt đầu")
+    if uploaded_file and st.session_state.selected_model_path:
+        if st.button("🚀 Chuyển đổi (Infer)", type="primary"):
+            try:
+                with st.spinner("Đang xử lý... (Gọi infer.py)"):
+                    # 1. Lưu ảnh upload ra file tạm thời (vì infer.py yêu cầu đường dẫn file)
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+                        image.save(tmp_file.name)
+                        tmp_path = tmp_file.name
+
+                    # 2. Gọi hàm infer từ file infer.py
+                    # Hàm này trả về Tensor (đã denormalize)
+                    output_tensor = infer(
+                        image_file=tmp_path, 
+                        ckpt_file=st.session_state.selected_model_path,
+                        image_size=256, # Bạn có thể đổi thành 512 hoặc thêm slider chỉnh size
+                        device=None     # Để None nó sẽ tự detect CUDA/CPU
+                    )
+                    
+                    # 3. Xóa file tạm
+                    os.remove(tmp_path)
+
+                    # 4. Chuyển Tensor thành Ảnh để hiển thị
+                    # output_tensor có shape [1, 3, H, W], cần squeeze bỏ dimension đầu
+                    output_image = transforms.ToPILImage()(output_tensor.squeeze(0))
+
+                    # Hiển thị
+                    st.image(output_image, caption="Result Image", use_container_width=True)
+                    
+                    # Nút download
+                    buf = io.BytesIO()
+                    output_image.save(buf, format='PNG')
+                    st.download_button(
+                        label="💾 Tải ảnh về",
+                        data=buf.getvalue(),
+                        file_name=f"result_{selected_item['filename']}.png",
+                        mime="image/png"
+                    )
+                    
+                    st.success("✅ Xử lý hoàn tất!")
+
+            except ValueError as ve:
+                st.error(f"Lỗi Model: {str(ve)}")
+                st.warning("Tên file model phải chứa chữ 'animegan' hoặc 'cyclegan' để code nhận diện được loại model.")
+            except Exception as e:
+                st.error(f"Đã xảy ra lỗi: {str(e)}")
+                st.exception(e)
+    
+    elif not uploaded_file:
+        st.info("👈 Vui lòng upload ảnh bên trái.")
+    elif not st.session_state.selected_model_path:
+        st.warning("👈 Vui lòng chọn model ở sidebar.")
 
 # Footer
 st.markdown("---")
-st.markdown("### 📝 Hướng dẫn sử dụng:")
 st.markdown("""
-1. **Chọn và Load Model**: 
-   - Ở sidebar, chọn checkpoint từ danh sách các epoch có sẵn
-   - Click nút "Load Model" để load model vào memory
-   - Checkpoint được tự động quét từ `output/animegan/checkpoints/epoch_xxx/`
-
-2. **Upload Ảnh**: 
-   - Chọn ảnh bạn muốn chuyển đổi (PNG, JPG, JPEG)
-
-3. **Tạo Ảnh Anime**: 
-   - Click nút "Tạo ảnh Anime" để thực hiện inference
-   - Kết quả sẽ hiển thị ở cột bên phải
-   - Bạn có thể tải ảnh kết quả về máy
-
-**Lưu ý**: 
-- Model sẽ được resize ảnh về 256x256 pixels
-- Sử dụng GPU sẽ nhanh hơn CPU
-- Model chỉ cần load 1 lần, có thể dùng cho nhiều ảnh
-- Checkpoint được sắp xếp theo epoch (mới nhất ở trên)
+**Lưu ý quan trọng:** - Code này gọi trực tiếp hàm `infer` từ file `infer.py`.
+- Tên file model (.pth) **BẮT BUỘC** phải chứa chữ `animegan` hoặc `cyclegan` (Ví dụ: `my_animegan.pth`).
 """)
-
